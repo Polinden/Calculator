@@ -50,9 +50,9 @@ object Form1: TForm1
     TabOrder = 2
   end
   object ButtonEq: TButton
-    Left = 544
+    Left = 546
     Height = 81
-    Top = 376
+    Top = 424
     Width = 145
     Caption = '='
     Font.Color = clBlack
@@ -414,5 +414,29 @@ object Form1: TForm1
     OnClick = AllButtonsClick
     ParentFont = False
     TabOrder = 25
+  end
+  object ButtonSqRt: TButton
+    Left = 544
+    Height = 33
+    Top = 280
+    Width = 145
+    Caption = '√'
+    Font.Color = clBlack
+    Font.Height = -21
+    OnClick = AllButtonsClick
+    ParentFont = False
+    TabOrder = 26
+  end
+  object ButtonSq: TButton
+    Left = 544
+    Height = 33
+    Top = 336
+    Width = 145
+    Caption = '²'
+    Font.Color = clBlack
+    Font.Height = -21
+    OnClick = AllButtonsClick
+    ParentFont = False
+    TabOrder = 27
   end
 end

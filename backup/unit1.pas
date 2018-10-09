@@ -16,7 +16,7 @@ type
       v : Double;
       oper : Char;
       next:   TOperation;
-      function Action(d: Double)  : Double;
+      function Action : Double;
    end;
 
 
@@ -49,7 +49,9 @@ type
     ButtonDv: TButton;
     ButtonEq: TButton;
     ButtonDel: TButton;
+    ButtonSqRt: TButton;
     ButtonDot: TButton;
+    ButtonSq1: TButton;
     GroupBox1: TGroupBox;
     Label1: TLabel;
     Label2: TLabel;
@@ -127,7 +129,9 @@ begin
     c:=t[t.Length];
     if c ='.' then StopDot:=false;
     //if codepoint then delete 2
-    if ord(c)>80 then Delete(t, t.Length-1.,2) else Delete(t, t.Length,1);
+    Label3.Caption:=Byte.toString(ord(c));
+    if ord(c)=154 then Delete(t, t.Length-1,4);
+    if ord(c) in [151,183] then Delete(t, t.Length-1,3) else Delete(t, t.Length,1);
     if t=''  then t:='0';
     Label4.Caption:=t;
     BorderText;
@@ -147,6 +151,7 @@ end;
 procedure TForm1.FinalCalculationButtonClick(Sender: TObject);
 var
   Act, Number, t : String;
+  c : Char;
   Pieces1, Pieces2 : TStrings;
   RegexObj1, RegexObj2: TRegExpr;
   CurOper : TOPeration;
@@ -162,17 +167,24 @@ begin
     Pieces2 := TStringList.Create;
     Operation:=TOperation.Create;
 
+    //replace UNICODE
     t:=Label4.Caption;
-    t:='0'+t;
-
     t:=StringReplace(t, '×','*', [rfReplaceAll]);
     t:=StringReplace(t, '÷','/', [rfReplaceAll]);
-    RegexObj1.Expression := '[-/*+-]+';
+    t:=StringReplace(t, '√','*0r', [rfReplaceAll]);
+    t:=StringReplace(t, '²','k0', [rfReplaceAll]);
+
+    //sort out stupidities
+    if t[1] = '/' then t:=t.TrimLeft('/');
+    if t[1] = '*' then t:='1'+t else t:='0'+t;
+
+    //splite with REGEX!
+    RegexObj1.Expression := '[kr/*+-]+';
     RegexObj2.Expression := '[\.0-9A-F]+';
     RegexObj1.Split(t, Pieces1);
     RegexObj2.Split(t, Pieces2);
 
-
+    //prepare graph
     CurOper:=Operation;
     for Act in Pieces2 do
     begin
@@ -299,18 +311,18 @@ function TForm1.ConwertTo(d: Double): String;
 var  t : String='';
      absD : Double;
      roundD : Int64;
-     fromExpToFraction : Double = 0.1;
 begin
   absD:=Abs(d);
   roundD:=Round(absD);
   case NumberSystem of
      Dec : begin
-                 t:=Double.ToString(d);
                  //no exponential format for small numbers
-                 if absD<fromExpToFraction then t:=FloatToStrF(d,ffFixed,5,MAXpresision);
+                 t:=FloatToStrF(d,ffFixed,5,MAXpresision);
                  t:=t.TrimRight('0');
                  t:=t.TrimRight('.');
                  if t='' then t:='0';
+                 //exponential is exeptible
+                 if absD>0 then t:=Double.ToString(d);
            end;
      Bin : begin
                  if absD>MAXInt2Binary then OverflowError:=true;
@@ -330,25 +342,23 @@ begin
 end;
 
 
-//ToDo
+
+//operations
 procedure TForm1.SymplifyOperations(Operation : TOperation);
-var c : Char;
-    CurOper : TOPeration;
+var CurOper : TOPeration;
 begin
+  //unary operations
   CurOper:=Operation;
   while CurOper.next<>Nil do begin
-        if CurOper.oper in ['*','/'] then
-           begin
-                CurOper.v:=CurOper.Action(CurOper.v);
-                CurOper.next:=CurOper.next.next;
-           end
-        else CurOper:=CurOper.next;
+        if CurOper.oper in ['r','k'] then CurOper.Action else CurOper:=CurOper.next;
   end;
-  while Operation.next<>Nil do
-        begin
-             Operation.v:=Operation.Action(Operation.v);
-             Operation.next:=Operation.next.next;
-        end;
+    //binary priority operations
+  CurOper:=Operation;
+  while CurOper.next<>Nil do begin
+        if CurOper.oper in ['*','/'] then CurOper.Action else CurOper:=CurOper.next;
+  end;
+ //low priority operations
+  while Operation.next<>Nil do Operation.Action;
 end;
 
 
@@ -384,21 +394,21 @@ end;
 
   { TOperation }
 
-   function TOperation.Action(d : Double)  : Double;
+   function TOperation.Action : Double;
       var res : Double=0;
       begin
-        OverflowError:=true;
+        OverflowError:=false;
         case oper of
-        '+': res:=d+next.v;
-        '-': res:=d-next.v;
-        '/': begin
-                 if next.v=0 then exit;
-                 res:=d/next.v;
-             end;
-        '*': res:=d*next.v;
+        '+': res:=v+next.v;
+        '-': res:=v-next.v;
+        '*': res:=v*next.v;
+        'k': res:=power(v,2);
+        '/': if next.v=0 then OverflowError:=true else res:=v/next.v;
+        'r': if next.v<0 then OverflowError:=true else res:=sqrt(next.v);
         end;
-          OverflowError:=false;
-          Action:=res;
+          v:=res;
+          oper:=next.oper;
+          next:=next.next;
       end;
 
 
