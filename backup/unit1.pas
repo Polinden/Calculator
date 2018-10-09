@@ -10,6 +10,19 @@ uses
 
 type
 
+  { TOperation }
+
+    TOperation = class(TObject)
+      v : Double;
+      oper : Char;
+      next:   TOperation;
+      function Action(d: Double)  : Double;
+   end;
+
+
+  TNumberSystem = (Dec=1, Hex=2, Bin=3);
+
+
   { TForm1 }
 
   TForm1 = class(TForm)
@@ -53,24 +66,16 @@ type
     procedure BackSpaceClick(Sender: TObject);
     function Checker(s: String): Boolean;
     procedure ConwerterSwitch(Sender: TObject);
+    procedure SymplifyOperations(Operation: TOperation);
+    procedure BorderText();
     function ConwertTo(d: Double): String;
     function ConwertFrom(s: String): Double;
-    procedure BorderText();
   private
 
   public
 
   end;
 
-  TOperation = class(TObject)
-      v : Double;
-      oper : String;
-      next:   TOperation;
-      function Action(d: Double)  : Double;
-   end;
-
-
-  TNumberSystem = (Dec=1, Hex=2, Bin=3);
 
 
 var
@@ -119,10 +124,10 @@ var t : String;
 begin
     if OverflowError then exit;
     t:=Label4.Caption;
-    c:=t[t.Length-1];
+    c:=t[t.Length];
     if c ='.' then StopDot:=false;
     //if codepoint then delete 2
-    if ord(c)>80 then Delete(t, t.Length-1,2) else Delete(t, t.Length,1);
+    if ord(c)>80 then Delete(t, t.Length-1.,2) else Delete(t, t.Length,1);
     if t=''  then t:='0';
     Label4.Caption:=t;
     BorderText;
@@ -145,7 +150,6 @@ var
   Pieces1, Pieces2 : TStrings;
   RegexObj1, RegexObj2: TRegExpr;
   CurOper : TOPeration;
-  ResCount : Double;
 begin
   if OverflowError then exit;
 
@@ -174,7 +178,7 @@ begin
     begin
         if Act<>'' then
            begin
-               CurOper.oper:=Act.Substring(0,1);
+               CurOper.oper:=Act[1];
                CurOper.next:=TOperation.Create;
                CurOper:=CurOper.next;
            end;
@@ -190,17 +194,9 @@ begin
            end;
     end;
 
-
-    CurOper:=Operation;
-    ResCount:=CurOper.v;
-    while (CurOper.next<>Nil) do
-          begin
-               ResCount:=CurOper.Action(ResCount);
-               CurOper:=CurOper.next;
-          end;
-
-
-   t:= ConwertTo(ResCount);
+   //parce graph
+   SymplifyOperations(Operation);
+   t:= ConwertTo(Operation.v);
    if t.Contains('.') then StopDot:=true;
    if OverflowError then t:='ERROR, OVERFLOW!';
    Label4.Caption:=t;
@@ -247,7 +243,6 @@ procedure TForm1.ConwerterSwitch(Sender: TObject);
 var i: byte=1;
     r : TRadioButton;
     b: TButton;
-    d : Double;
 begin
     FinalCalculationButtonClick(Sender);
     PrevNumberSystem:=NumberSystem;
@@ -311,6 +306,7 @@ begin
   case NumberSystem of
      Dec : begin
                  t:=Double.ToString(d);
+                 //no exponential format for small numbers
                  if absD<fromExpToFraction then t:=FloatToStrF(d,ffFixed,5,MAXpresision);
                  t:=t.TrimRight('0');
                  t:=t.TrimRight('.');
@@ -333,6 +329,27 @@ begin
   ConwertTo:=t;
 end;
 
+
+//ToDo
+procedure TForm1.SymplifyOperations(Operation : TOperation);
+var c : Char;
+    CurOper : TOPeration;
+begin
+  CurOper:=Operation;
+  while CurOper.next<>Nil do begin
+        if CurOper.oper in ['*','/'] then
+           begin
+                CurOper.v:=CurOper.Action(CurOper.v);
+                CurOper.next:=CurOper.next.next;
+           end
+        else CurOper:=CurOper.next;
+  end;
+  while Operation.next<>Nil do
+        begin
+             Operation.v:=Operation.Action(Operation.v);
+             Operation.next:=Operation.next.next;
+        end;
+end;
 
 
 
@@ -360,6 +377,7 @@ begin
   NumberSystem:=Dec;
   PrevNumberSystem:=Dec;
 end;
+
 
 
 
