@@ -11,6 +11,9 @@ type
 
   { TOperation }
 
+    TMyErrorOverflow=class(Exception);
+
+
     TOperation = class(TObject)
       v : Double;
       oper : Char;
@@ -167,7 +170,7 @@ begin
     //sort out stupidities
     t:=TrimLeft(t, '/');
     if (t='') or (t='/')  then t:='0';
-    if t[1] = '*' then t:='1'+t else t:='0'+t;
+    if (t[1] = '*') or (t[1] = 'v') then t:='1'+t else t:='0'+t;
 
     //prepare complex operations
     t:=StringReplace(t, 'v','*0v', [rfReplaceAll]);
@@ -210,7 +213,6 @@ begin
    SymplifyOperations(Operation);
    t:= ConwertTo(Operation.v);
    if AnsiContainsText(t, ',') then StopDot:=true;
-   if OverflowError then t:='ERROR, OVERFLOW!';
 
 
    Label4.Caption:=t;
@@ -219,8 +221,19 @@ begin
 
    //show message if error
   except
-    on E: EConvertError do ShowMessage('O-p-s! Conversion error has happend!');
-    on E: Exception  do ShowMessage('O-o-o-p-s! Serious error has happend!');
+    on E: TMyErrorOverflow do begin
+          Label4.Caption:='ERROR, OVERFLOW!';
+          OverflowError:=True;
+    end;
+    on E: EInvalidOp  do begin
+          Label4.Caption:='ERROR, OVERFLOW!';
+          OverflowError:=True;
+    end;
+    on E: EConvertError do begin
+          Label4.Caption:='CONVERSION ERROR!';
+          OverflowError:=True;
+    end;
+    on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend!');
   end;
 
    //for sure - free memory for all created objects
@@ -330,7 +343,7 @@ begin
                  if absD>0 then t:=FloatToStr(d);
            end;
      Bin : begin
-                 if absD>MAXInt2Binary then OverflowError:=true;
+                 if absD>MAXInt2Binary then raise TMyErrorOverflow.Create('');
                  while (roundD > 0) do
                        begin
                           if (roundD mod 2)=1 then t:='1'+t else t:='0'+t;
@@ -339,7 +352,7 @@ begin
                  if t='' then t:='0';
            end;
      Hex : begin
-                 if absD>MAXInt2Hex then OverflowError:=true;
+                 if absD>MAXInt2Hex then raise TMyErrorOverflow.Create('');
                  t:=Format('%x', [roundD]);
            end;
   end;
@@ -403,14 +416,13 @@ end;
       var res : Double;
       begin
         res:=0;
-        OverflowError:=false;
         case oper of
         '+': res:=v+next.v;
         '-': res:=v-next.v;
         '*': res:=v*next.v;
         'q': res:=power(v,2);
-        '/': if next.v=0 then OverflowError:=true else res:=v/next.v;
-        'v': if next.v<0 then OverflowError:=true else res:=sqrt(next.v);
+        '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
+        'v': if next.v<0 then raise TMyErrorOverflow.Create('') else res:=sqrt(next.v);
         end;
           v:=res;
           oper:=next.oper;
