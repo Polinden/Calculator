@@ -9,12 +9,10 @@ uses
 
 type
 
+
   { TOperation }
 
-    TMyErrorOverflow=class(Exception);
-
-
-    TOperation = class(TObject)
+   TOperation = class(TObject)
       v : Double;
       oper : Char;
       next:   TOperation;
@@ -22,12 +20,11 @@ type
    end;
 
 
-  TNumberSystem = (Dec=1, Hex=2, Bin=3);
-
 
   { TForm1 }
 
   TForm1 = class(TForm)
+
     Button0: TButton;
     Button1: TButton;
     Button2: TButton;
@@ -72,22 +69,38 @@ type
     procedure CanselButtonClick(Sender: TObject);
     procedure FinalCalculationButtonClick(Sender: TObject);
     procedure BackSpaceClick(Sender: TObject);
-    function Checker(s: String): Boolean;
     procedure ConwerterSwitch(Sender: TObject);
+
+   private
+    function Checker(s: String): Boolean;
     procedure SymplifyOperations(Operation: TOperation);
     procedure BorderText();
     function ConwertTo(d: Double): String;
     function ConwertFrom(s: String): Double;
-  private
 
-  public
-
+   public
   end;
+
+
+
+  TNumberSystem = (Dec=1, Hex=2, Bin=3);
+
+  TMyErrorOverflow=class(Exception);
 
 
 
 var
   Form1: TForm1;
+
+
+
+
+
+implementation
+
+
+
+var
   Operation : TOperation;
   StopDot : boolean = false;
   OverflowError: boolean = false;
@@ -105,23 +118,21 @@ var
 
 
 
-
-implementation
-
-
 { TForm1 }
 
 procedure TForm1.AllButtonsClick(Sender: TObject);
 var   s, t: String;
 begin
       if OverflowError then CanselButtonClick(Sender);
+
+      //if Sender.ClassType = TImage then  ...
       s:=TComponent(Sender).Name;
       if s='ImgSqrt' then  s:='v'
-        else if s='ImgPow' then  s:='q'
+        else if s='ImgPow' then  s:='^'
             else s:= TButton(Sender).Caption;
 
-      t:=Label4.Caption;
       if Checker(s) then exit;
+      t:=Label4.Caption;
       if (t='0') and (s<>',') then t:=s else t:=t+s;
       Label4.Caption:=t;
       BorderText;
@@ -177,16 +188,17 @@ begin
 
     //sort out stupidities
     t:=TrimLeft(t, '/');
-    if (t='') or (t='/')  then t:='0';
-    if (t[1] = '*') or (t[1] = 'v') then t:='1'+t else t:='0'+t;
+    t:=TrimLeft(t, '^');
+    t:=TrimLeft(t, '*');
+    if (Length(t)>0) and (t[1]='v') then t:='1'+t else t:='0'+t;
 
     //prepare complex operations
     t:=StringReplace(t, 'v','*0v', [rfReplaceAll]);
-    t:=StringReplace(t, 'q','q0', [rfReplaceAll]);
+    t:=StringReplace(t, '^','^0', [rfReplaceAll]);
 
     //splite with REGEX!
-    Expression1 := '[vq/*+-]+';
-    Expression2 := '[\,0-9A-F]+';
+    Expression1 := '[v^/*+-]+';
+    Expression2 := '[,0-9A-F]+';
     Regex1:=TRegExpr.Create(Expression1);
     Regex2:=TRegExpr.Create(Expression2);
     Regex1.Split(t, Pieces1);
@@ -293,6 +305,7 @@ begin
        Hex :  begin
                     for ic:=1 to Length(DecimalButtons) do DecimalButtons[ic].Enabled:=True;
                     for ic:=1 to Length(HeximalButtons) do HeximalButtons[ic].Enabled:=True;
+                    ButtonDot.Enabled:=False;
               end;
        Bin :  begin
                     for ic:=1 to Length(DecimalButtons) do DecimalButtons[ic].Enabled:=False;
@@ -308,7 +321,7 @@ procedure TForm1.BorderText();
 begin
   Label2.Font.color:=clBlack;
   Label2.Caption:=IntToStr(Length(Label4.Caption));
-  if Length(Label4.Caption)>29 then   Label2.Font.color:=clRed;
+  if Length(Label4.Caption)>(MAXNumberWidth-1) then   Label2.Font.color:=clRed;
 end;
 
 
@@ -343,12 +356,10 @@ begin
   case NumberSystem of
      Dec : begin
                  //no exponential format for small numbers
-                 t:=FloatToStrF(d,ffFixed,5,MAXpresision);
+                 t:=FloatToStrF(d,ffFixed,16,MAXpresision);
                  t:=TrimRight(t,'0');
                  t:=TrimRight(t, ',');
                  if t='' then t:='0';
-                 //exponential is exeptible
-                 if absD>0 then t:=FloatToStr(d);
            end;
      Bin : begin
                  if absD>MAXInt2Binary then raise TMyErrorOverflow.Create('');
@@ -376,7 +387,7 @@ begin
   //unary operations
   CurOper:=Operation;
   while CurOper.next<>Nil do begin
-        if CurOper.oper in ['v','q'] then CurOper.Action else CurOper:=CurOper.next;
+        if CurOper.oper in ['v','^'] then CurOper.Action else CurOper:=CurOper.next;
   end;
     //binary priority operations
   CurOper:=Operation;
@@ -428,7 +439,7 @@ end;
         '+': res:=v+next.v;
         '-': res:=v-next.v;
         '*': res:=v*next.v;
-        'q': res:=power(v,2);
+        '^': res:=power(v,2);
         '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
         'v': if next.v<0 then raise TMyErrorOverflow.Create('') else res:=sqrt(next.v);
         end;

@@ -2119,8 +2119,8 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button1: TButton
-    Left = 194
-    Top = 136
+    Left = 362
+    Top = 88
     Width = 145
     Height = 33
     Caption = '1'
@@ -2210,7 +2210,7 @@ object Form1: TForm1
   end
   object Button2: TButton
     Left = 194
-    Top = 184
+    Top = 136
     Width = 145
     Height = 33
     Caption = '2'
@@ -2224,8 +2224,8 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button3: TButton
-    Left = 194
-    Top = 232
+    Left = 362
+    Top = 136
     Width = 145
     Height = 33
     Caption = '3'
@@ -2240,7 +2240,7 @@ object Form1: TForm1
   end
   object Button4: TButton
     Left = 194
-    Top = 280
+    Top = 184
     Width = 145
     Height = 33
     Caption = '4'
@@ -2284,8 +2284,8 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button6: TButton
-    Left = 362
-    Top = 136
+    Left = 194
+    Top = 232
     Width = 145
     Height = 33
     Caption = '6'
@@ -2300,7 +2300,7 @@ object Form1: TForm1
   end
   object Button7: TButton
     Left = 362
-    Top = 184
+    Top = 232
     Width = 145
     Height = 33
     Caption = '7'
@@ -2314,8 +2314,8 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button8: TButton
-    Left = 362
-    Top = 232
+    Left = 194
+    Top = 280
     Width = 145
     Height = 33
     Caption = '8'
@@ -2330,7 +2330,7 @@ object Form1: TForm1
   end
   object Button5: TButton
     Left = 362
-    Top = 88
+    Top = 184
     Width = 145
     Height = 33
     Caption = '5'
@@ -2360,7 +2360,7 @@ object Form1: TForm1
   end
   object ButtonDot: TButton
     Left = 10
-    Top = 424
+    Top = 440
     Width = 145
     Height = 33
     Caption = ','
@@ -2411,7 +2411,7 @@ object Form1: TForm1
   end
   object GroupBox1: TGroupBox
     Left = 10
-    Top = 224
+    Top = 216
     Width = 145
     Height = 169
     Caption = 'Converter'
@@ -2472,7 +2472,7 @@ object Form1: TForm1
   end
   object ButtonA: TButton
     Left = 194
-    Top = 328
+    Top = 344
     Width = 145
     Height = 33
     Caption = 'A'
@@ -2488,7 +2488,7 @@ object Form1: TForm1
   end
   object ButtonB: TButton
     Left = 362
-    Top = 328
+    Top = 344
     Width = 145
     Height = 33
     Caption = 'B'
@@ -2504,7 +2504,7 @@ object Form1: TForm1
   end
   object ButtonC: TButton
     Left = 194
-    Top = 376
+    Top = 392
     Width = 145
     Height = 33
     Caption = 'C'
@@ -2520,7 +2520,7 @@ object Form1: TForm1
   end
   object ButtonD: TButton
     Left = 362
-    Top = 376
+    Top = 392
     Width = 145
     Height = 33
     Caption = 'D'
@@ -2536,7 +2536,7 @@ object Form1: TForm1
   end
   object ButtonE: TButton
     Left = 194
-    Top = 424
+    Top = 440
     Width = 145
     Height = 33
     Caption = 'E'
@@ -2552,7 +2552,7 @@ object Form1: TForm1
   end
   object ButtonF: TButton
     Left = 362
-    Top = 424
+    Top = 440
     Width = 145
     Height = 33
     Caption = 'F'

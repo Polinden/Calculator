@@ -21,8 +21,9 @@ function TrimLeft(const Str: string; Ch: Char): string;
 var
   E: integer;
 begin
+  if Length(Str)=0 then begin Result:=''; exit; end;
   E:=1;
-  while (E < Length(Str)) and (Str[E]=Ch) do Inc(E);
+  while (E <= Length(Str)) and (Str[E]=Ch) do Inc(E);
   SetString(Result, PChar(@Str[E]), Length(Str)-E+1);
 end;
 
