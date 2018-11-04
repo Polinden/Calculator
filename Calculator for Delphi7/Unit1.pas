@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr;
+  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg;
 
 
 type
@@ -51,8 +51,6 @@ type
     ButtonDv: TButton;
     ButtonEq: TButton;
     ButtonDel: TButton;
-    ButtonSqRt: TButton;
-    ButtonSq: TButton;
     ButtonDot: TButton;
     GroupBox1: TGroupBox;
     Label1: TLabel;
@@ -63,6 +61,12 @@ type
     RadioButton1: TRadioButton;
     RadioButton2: TRadioButton;
     RadioButton3: TRadioButton;
+    ImgSqrt: TImage;
+    ImgPow: TImage;
+    shp1: TShape;
+    shp2: TShape;
+    shp3: TShape;
+    shp4: TShape;
     procedure AfterConstruction; override;
     procedure AllButtonsClick(Sender: TObject);
     procedure CanselButtonClick(Sender: TObject);
@@ -111,7 +115,11 @@ procedure TForm1.AllButtonsClick(Sender: TObject);
 var   s, t: String;
 begin
       if OverflowError then CanselButtonClick(Sender);
-      s:= TButton(Sender).Caption;
+      s:=TComponent(Sender).Name;
+      if s='ImgSqrt' then  s:='v'
+        else if s='ImgPow' then  s:='q'
+            else s:= TButton(Sender).Caption;
+
       t:=Label4.Caption;
       if Checker(s) then exit;
       if (t='0') and (s<>',') then t:=s else t:=t+s;
@@ -435,6 +443,7 @@ end;
 
 
 {$R *.dfm}
+
 
 
 end.
