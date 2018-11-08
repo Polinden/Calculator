@@ -113,7 +113,7 @@ var
   RadioButtons : array [1..3] of TRadioButton;
   DecimalButtons : array [1..9] of TButton;
   HeximalButtons : array [1..6] of TButton;
-  MemoryString : String;
+  MemoryString : Double;
 
   //constants
   MAXNumberWidth : Integer =30;
@@ -302,7 +302,7 @@ begin
     PrevNumberSystem:=NumberSystem;
     for ic:=1 to Length(RadioButtons) do if RadioButtons[ic].Checked then NumberSystem:=TNumberSystem(ic);
     FinalCalculationButtonClick(Sender);
-
+    BorderText;
 
     case NumberSystem of
        Dec :  begin
@@ -366,7 +366,7 @@ begin
   roundD:=Round(absD);
   case NumberSystem of
      Dec : begin
-                 t:=FloatToStrF(d,ffFixed,16,MAXpresision);
+                 t:=Format('%0.16f', [d]);
                  t:=TrimRight(t,'0');
                  t:=TrimRight(t, ',');
                  if t='' then t:='0';
@@ -433,7 +433,7 @@ begin
   HeximalButtons[6]:=ButtonF;
   NumberSystem:=Dec;
   PrevNumberSystem:=Dec;
-  MemoryString:='0';
+  MemoryString:=0;
 end;
 
 
@@ -463,18 +463,22 @@ end;
 procedure TForm1.ButtonMClick(Sender: TObject);
 begin
    FinalCalculationButtonClick(Sender);
-   MemoryString:= Label4.Caption;
+   MemoryString:= ConwertFrom(Label4.Caption);
 end;
 
 procedure TForm1.ButtonMrClick(Sender: TObject);
+var t:string;
 begin
-   if Label4.Caption = '0' then Label4.Caption:=MemoryString
-     else Label4.Caption:= Label4.Caption + MemoryString;
+   t:=ConwertTo(MemoryString);
+   if Checker(t) then Exit;
+   if Label4.Caption = '0' then Label4.Caption:=t
+     else Label4.Caption:= Label4.Caption + t;
+   BorderText;
 end;
 
 procedure TForm1.ButttonMcClick(Sender: TObject);
 begin
-  MemoryString:='0';
+  MemoryString:=0;
 end;
 
 {$R *.dfm}
