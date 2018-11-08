@@ -73,9 +73,9 @@ object Form1: TForm1
   object Label3: TLabel
     Left = 209
     Top = 488
-    Width = 92
+    Width = 74
     Height = 19
-    Caption = 'Maximum 30'
+    Caption = 'Maximum '
     Color = clActiveBorder
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

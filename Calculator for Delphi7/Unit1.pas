@@ -116,10 +116,10 @@ var
   MemoryString : Double;
 
   //constants
-  MAXNumberWidth : Integer =30;
+  MAXNumberWidth : Integer =50;              //desired screen WIDTH
   MAXpresision : Integer=12;
-  MAXInt2Binary : Integer = 536870912;
-  MAXInt2Hex : Int64 = 922337203685477;
+  MAXInt2Binary : Int64 = 1073741823;        //maximum for 30 symbols + see AfterConstruction
+  MAXInt2Hex : Int64 = 9223372036854775807;   //maximum Integer Number of Int64
   All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];
 
 
@@ -269,27 +269,31 @@ begin
    //show message if error
   except
     on E: TMyErrorOverflow do begin
-          Label4.Caption:='ERROR, OVERFLOW!';
+          Label4.Caption:='ERROR, OVERFLOW! ';
+          OverflowError:=True;
+    end;
+    on E: EOverflow  do begin
+          Label4.Caption:='ERROR, OVERFLOW! ';
           OverflowError:=True;
     end;
     on E: EInvalidOp  do begin
-          Label4.Caption:='ERROR, OVERFLOW!';
+          Label4.Caption:='ERROR, OVERFLOW! ';
           OverflowError:=True;
     end;
     on E: EConvertError do begin
-          Label4.Caption:='CONVERSION ERROR!';
+          Label4.Caption:='CONVERSION ERROR! ';
           OverflowError:=True;
     end;
-    on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend!');
+    on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend: '+E.Message+' !');
   end;
 
    //for sure - free memory for all created objects
   finally
     CurOper:=Operation;
-    while (CurOper.next<>Nil) do begin
+    while (CurOper<>Nil) do begin
         Operation:=CurOper;
         CurOper:=CurOper.next;
-       Operation.free;
+        Operation.free;
     end;
     Pieces1.free();
     Pieces2.free();
@@ -366,8 +370,8 @@ begin
      Dec : v:=StrToFloat(s);//convert string to extended
      Bin : begin
                  l:=length(s);
-                 for i := 0 to l-1 do v:=v+((ord(s[l-i])-48) shl i); //'ord' is a number codding this symbol
-                 // for i:=l downto 1 do v:=v+ StrToInt64(s[i])*power(2,l-i);
+                 //for i := 0 to l-1 do v:=v+((ord(s[l-i])-48) shl i); //'ord' is a number codding this symbol
+                 for i:=l downto 1 do v:=v+ StrToInt64(s[i])*power(2,l-i);
            end;
      Hex : begin
                  v:=StrToInt64('$'+s); //convert Hex string to integer
@@ -385,7 +389,6 @@ var  t,f : String;
 begin
   t:='';
   absD:=Abs(d);
-  roundD:=Round(absD);
   case NumberSystem of
      Dec : begin
                  f:='%0.'+IntToStr(MAXpresision)+'f'; // '%0.16f'
@@ -396,6 +399,7 @@ begin
            end;
      Bin : begin
                  if absD>MAXInt2Binary then raise TMyErrorOverflow.Create('');
+                 roundD:=Round(absD);
                  while (roundD > 0) do
                        begin
                           if (roundD mod 2)=1 then t:='1'+t else t:='0'+t;
@@ -405,6 +409,7 @@ begin
            end;
      Hex : begin
                  if absD>MAXInt2Hex then raise TMyErrorOverflow.Create('');
+                 roundD:=Round(absD);
                  t:=Format('%x', [roundD]);
            end;
   end;
@@ -457,6 +462,8 @@ begin
   NumberSystem:=Dec;
   PrevNumberSystem:=Dec;
   MemoryString:=0;
+  MAXInt2Binary:=Round(Power(2, MAXNumberWidth))-1;
+  Label3.Caption:=Label3.Caption+' '+IntToStr(MAXNumberWidth);
 end;
 
 
