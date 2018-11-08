@@ -147,9 +147,11 @@ begin
       q:=t[Length(t)];  //last symbol on the screen
       a_last:=TActions(ord(q)); //operation from last symbol on screen
       a_passed:=TActions(ord(s)); //operation pressed
-      if (a_last in (All_Operations-[Sq])) and (a_passed in (All_Operations-[Mn])) then exit;
+      if (a_last in (All_Operations-[Sq])) and (a_passed in (All_Operations-[Mn,Sqr])) then exit;
       if (a_last = Mn) and (a_passed = Mn) then exit;
       if (a_last = Sqr) and (a_passed = Mn) then exit;
+      if (a_last = Sq) and (a_passed = Sq) then exit;
+      if (a_last = Sqr) and (a_passed = Sqr) then exit;
 
       //replace '0-...' to '-...'
       if (t='0') and not (a_passed in  All_Operations-[Mn, Sqr]) then t:=s else t:=t+s;
@@ -213,10 +215,12 @@ begin
     if (Length(t)>0) and (t[1]='v') then t:='1'+t else t:='0'+t;
 
     //prepare complex operations
-    t:=StringReplace(t, 'v','*0v', [rfReplaceAll]);
+    t:=StringReplace(t, '-v','-1*v', [rfReplaceAll]);
+    t:=StringReplace(t, 'v','*1v', [rfReplaceAll]);
     t:=StringReplace(t, '^','^0', [rfReplaceAll]);
     t:=StringReplace(t, '+-','-', [rfReplaceAll]);
-    t:=ReplaceRegExpr('(\d)-', t, '$1~', True);
+    t:=ReplaceRegExpr('([\d,])-', t, '$1~', True);
+
 
     //splite with REGEX!
     Expression1 := '[v^/*+~]+';
