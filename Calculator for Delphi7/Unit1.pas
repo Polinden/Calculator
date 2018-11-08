@@ -235,6 +235,7 @@ begin
 
    //parce graph
    SymplifyOperations(Operation);
+   PrevNumberSystem:=NumberSystem;
    t:= ConwertTo(Operation.v);
    if AnsiContainsText(t, ',') then StopDot:=true;
 
@@ -278,13 +279,15 @@ end;
 
 
 //check if input has mistakes
+//s is a string which we try to add to Label4
 function TForm1.Checker(s: String): Boolean;
 var c: Char;
 begin
       c:=s[1];
       if not (c in ['0'..'9', ','])  then StopDot:=false;
       Checker:=false;
-      if Length(Label4.Caption)>(maxNumberWidth-1) then Checker:=true;
+      //checks if Label4+s doesn't exeeds max length
+      if (Length(Label4.Caption)+Length(s))>maxNumberWidth then Checker:=true;
       if (s=',') and StopDot then Checker:=true;
       if s=',' then StopDot:=true;
 end;
@@ -324,27 +327,31 @@ begin
 procedure TForm1.BorderText();
 begin
   Label2.Font.color:=clBlack;
-  Label2.Caption:=IntToStr(Length(Label4.Caption));
-  if Length(Label4.Caption)>(MAXNumberWidth-1) then   Label2.Font.color:=clRed;
+  Label2.Caption:=IntToStr(Length(Label4.Caption));//IntToStr - convert integer number to string
+  if Length(Label4.Caption)=(MAXNumberWidth) then   Label2.Font.color:=clRed;
 end;
 
 
-//confert from and input to digital based of PrevNumberSystem
+//input converter
+//s is a string, containing a number in PrevNumberSystem (e.g., in Hex '5A')
+//result is double type (e.g., 90.0)
 function TForm1.ConwertFrom(s: String): Double;
 var  v : Double;
      i, l : Integer;
 begin
   v:=0;
   case PrevNumberSystem of
-     Dec : v:=StrToFloat(s);
+     Dec : v:=StrToFloat(s);//convert string to extended
      Bin : begin
                  l:=length(s);
-                 for i := 0 to l-1 do v:=v+((ord(s[l-i])-48) shl i);
+                 for i := 0 to l-1 do v:=v+((ord(s[l-i])-48) shl i); //'ord' is a number codding this symbol
+                 // for i:=l downto 1 do v:=v+ StrToInt64(s[i])*power(2,l-i);
            end;
-     Hex : v:=StrToInt64('$'+s);
+     Hex : begin
+                 v:=StrToInt64('$'+s); //convert Hex string to integer
+           end;
   end;
 ConwertFrom:=v;
-PrevNumberSystem:=NumberSystem;
 end;
 
 
@@ -359,7 +366,6 @@ begin
   roundD:=Round(absD);
   case NumberSystem of
      Dec : begin
-                 //no exponential format for small numbers
                  t:=FloatToStrF(d,ffFixed,16,MAXpresision);
                  t:=TrimRight(t,'0');
                  t:=TrimRight(t, ',');
