@@ -2194,7 +2194,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonCe: TButton
-    Left = 10
+    Left = 18
     Top = 88
     Width = 145
     Height = 33
@@ -2374,7 +2374,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonDel: TButton
-    Left = 10
+    Left = 18
     Top = 136
     Width = 145
     Height = 33
@@ -2411,7 +2411,7 @@ object Form1: TForm1
   end
   object GroupBox1: TGroupBox
     Left = 10
-    Top = 216
+    Top = 256
     Width = 145
     Height = 169
     Caption = 'Converter'
@@ -2565,5 +2565,32 @@ object Form1: TForm1
     ParentFont = False
     TabOrder = 25
     OnClick = AllButtonsClick
+  end
+  object ButtonM: TButton
+    Left = 8
+    Top = 192
+    Width = 49
+    Height = 41
+    Caption = 'MS'
+    TabOrder = 26
+    OnClick = ButtonMClick
+  end
+  object ButtonMr: TButton
+    Left = 64
+    Top = 192
+    Width = 49
+    Height = 41
+    Caption = 'MR'
+    TabOrder = 27
+    OnClick = ButtonMrClick
+  end
+  object ButttonMc: TButton
+    Left = 120
+    Top = 192
+    Width = 49
+    Height = 41
+    Caption = 'MC'
+    TabOrder = 28
+    OnClick = ButttonMcClick
   end
 end

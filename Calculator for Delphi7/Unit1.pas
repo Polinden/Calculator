@@ -49,6 +49,9 @@ type
     ButtonEq: TButton;
     ButtonDel: TButton;
     ButtonDot: TButton;
+    ButtonM: TButton;
+    ButtonMr: TButton;
+    ButttonMc: TButton;
     GroupBox1: TGroupBox;
     Label1: TLabel;
     Label2: TLabel;
@@ -70,6 +73,9 @@ type
     procedure FinalCalculationButtonClick(Sender: TObject);
     procedure BackSpaceClick(Sender: TObject);
     procedure ConwerterSwitch(Sender: TObject);
+    procedure ButtonMClick(Sender: TObject);
+    procedure ButtonMrClick(Sender: TObject);
+    procedure ButttonMcClick(Sender: TObject);
 
    private
     function Checker(s: String): Boolean;
@@ -89,10 +95,9 @@ type
 
 
 
+
 var
   Form1: TForm1;
-
-
 
 
 
@@ -108,7 +113,7 @@ var
   RadioButtons : array [1..3] of TRadioButton;
   DecimalButtons : array [1..9] of TButton;
   HeximalButtons : array [1..6] of TButton;
-
+  MemoryString : String;
 
   //constants
   MAXNumberWidth : Integer =30;
@@ -124,7 +129,6 @@ procedure TForm1.AllButtonsClick(Sender: TObject);
 var   s, t: String;
 begin
       if OverflowError then CanselButtonClick(Sender);
-
       //if Sender.ClassType = TImage then  ...
       s:=TComponent(Sender).Name;
       if s='ImgSqrt' then  s:='v'
@@ -146,8 +150,8 @@ var t : String;
 begin
     if OverflowError then exit;
     t:=Label4.Caption;
-    c:=t[Length(t)];
-    if c =',' then StopDot:=false;
+    c:=t[Length(t)]; //last simbol of the string
+    if c =',' then StopDot:=false;  //to do!!!!!
     Delete(t, Length(t),1);
     if t=''  then t:='0';
     Label4.Caption:=t;
@@ -273,7 +277,7 @@ end;
 
 
 
-//check if input is odd
+//check if input has mistakes
 function TForm1.Checker(s: String): Boolean;
 var c: Char;
 begin
@@ -423,6 +427,7 @@ begin
   HeximalButtons[6]:=ButtonF;
   NumberSystem:=Dec;
   PrevNumberSystem:=Dec;
+  MemoryString:='0';
 end;
 
 
@@ -449,12 +454,24 @@ end;
       end;
 
 
+procedure TForm1.ButtonMClick(Sender: TObject);
+begin
+   FinalCalculationButtonClick(Sender);
+   MemoryString:= Label4.Caption;
+end;
 
+procedure TForm1.ButtonMrClick(Sender: TObject);
+begin
+   if Label4.Caption = '0' then Label4.Caption:=MemoryString
+     else Label4.Caption:= Label4.Caption + MemoryString;
+end;
 
-
+procedure TForm1.ButttonMcClick(Sender: TObject);
+begin
+  MemoryString:='0';
+end;
 
 {$R *.dfm}
-
 
 
 end.
