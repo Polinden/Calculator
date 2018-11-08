@@ -90,7 +90,7 @@ type
 
 
   TNumberSystem = (Dec=1, Hex=2, Bin=3);
-
+  TActions = (Pl=ord('+'), Mn=ord('-'),Ml=ord('*'),Dv=ord('/'), Sq=ord('^'), Sqr=ord('v'));
   TMyErrorOverflow=class(Exception);
 
 
@@ -117,27 +117,43 @@ var
 
   //constants
   MAXNumberWidth : Integer =30;
-  MAXpresision : Integer=16;
+  MAXpresision : Integer=12;
   MAXInt2Binary : Integer = 536870912;
   MAXInt2Hex : Int64 = 922337203685477;
-
+  All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];
 
 
 { TForm1 }
 
 procedure TForm1.AllButtonsClick(Sender: TObject);
-var   s, t: String;
+var   t: String;
+      s, q : Char;
+      a_last, a_passed : TActions;
 begin
       if OverflowError then CanselButtonClick(Sender);
-      //if Sender.ClassType = TImage then  ...
-      s:=TComponent(Sender).Name;
-      if s='ImgSqrt' then  s:='v'
-        else if s='ImgPow' then  s:='^'
-            else s:= TButton(Sender).Caption;
+      //get Name or Caption for pressed object
+      //but first cast Sender to nessecary type
+      //if Sender.ClassType = TImage then  ... is also possible
+      t:=TComponent(Sender).Name;
+      if t='ImgSqrt' then  s:='v'
+        else if t='ImgPow' then  s:='^'
+            else s:= TButton(Sender).Caption[1];
 
+      t:=Label4.Caption;//work string on the screen
+      //check if too long string and if dot is pressed twice
       if Checker(s) then exit;
-      t:=Label4.Caption;
-      if (t='0') and (s<>',') then t:=s else t:=t+s;
+
+      //check if too many operation pressed
+      q:=t[Length(t)];  //last symbol on the screen
+      a_last:=TActions(ord(q)); //operation from last symbol on screen
+      a_passed:=TActions(ord(s)); //operation pressed
+      if (a_last in (All_Operations-[Sq])) and (a_passed in (All_Operations-[Mn])) then exit;
+      if (a_last = Mn) and (a_passed = Mn) then exit;
+      if (a_last = Sqr) and (a_passed = Mn) then exit;
+
+      //replace '0-...' to '-...'
+      if (t='0') and not (a_passed in  All_Operations-[Mn, Sqr]) then t:=s else t:=t+s;
+
       Label4.Caption:=t;
       BorderText;
 end;
@@ -174,8 +190,8 @@ var
   Act, Number, t : String;
   Expression1, Expression2 : String;
   Regex1, Regex2 : TRegExpr;
-  Pieces1, Pieces2 : TStrings;
-  CurOper : TOPeration;
+  Pieces1, Pieces2 : TStringList;//list of strings with varring length (rubber)
+  CurOper : TOperation;
   c : Char;
   ic : Word;
 begin
@@ -191,25 +207,27 @@ begin
     Operation:=TOperation.Create;
 
     //sort out stupidities
-    t:=TrimLeft(t, '/');
-    t:=TrimLeft(t, '^');
-    t:=TrimLeft(t, '*');
+    t:=TrimRight(t, 'v');
+    t:=TrimRight(t, '/');
+    t:=TrimRight(t, '*');
     if (Length(t)>0) and (t[1]='v') then t:='1'+t else t:='0'+t;
 
     //prepare complex operations
     t:=StringReplace(t, 'v','*0v', [rfReplaceAll]);
     t:=StringReplace(t, '^','^0', [rfReplaceAll]);
+    t:=StringReplace(t, '+-','-', [rfReplaceAll]);
+    t:=ReplaceRegExpr('(\d)-', t, '$1~', True);
 
     //splite with REGEX!
-    Expression1 := '[v^/*+-]+';
-    Expression2 := '[,0-9A-F]+';
+    Expression1 := '[v^/*+~]+';
+    Expression2 := '[-,0-9A-F]+';
     Regex1:=TRegExpr.Create(Expression1);
     Regex2:=TRegExpr.Create(Expression2);
     Regex1.Split(t, Pieces1);
     Regex2.Split(t, Pieces2);
 
 
-    //prepare graph
+    //prepare chain of operations
     CurOper:=Operation;
     for ic:=0 to Pieces2.Count-1 do
     begin
@@ -233,7 +251,7 @@ begin
            end;
     end;
 
-   //parce graph
+   //calculate chain
    SymplifyOperations(Operation);
    PrevNumberSystem:=NumberSystem;
    t:= ConwertTo(Operation.v);
@@ -357,7 +375,7 @@ end;
 
 //confert from  digital to any output  based of  NumberSystem
 function TForm1.ConwertTo(d: Double): String;
-var  t : String;
+var  t,f : String;
      absD : Double;
      roundD : Int64;
 begin
@@ -366,7 +384,8 @@ begin
   roundD:=Round(absD);
   case NumberSystem of
      Dec : begin
-                 t:=Format('%0.16f', [d]);
+                 f:='%0.'+IntToStr(MAXpresision)+'f'; // '%0.16f'
+                 t:=Format(f, [d]);
                  t:=TrimRight(t,'0');
                  t:=TrimRight(t, ',');
                  if t='' then t:='0';
@@ -392,7 +411,7 @@ end;
 
 //operations
 procedure TForm1.SymplifyOperations(Operation : TOperation);
-var CurOper : TOPeration;
+var CurOper : TOperation;
 begin
   //unary operations
   CurOper:=Operation;
@@ -448,7 +467,7 @@ end;
         res:=0;
         case oper of
         '+': res:=v+next.v;
-        '-': res:=v-next.v;
+        '~': res:=v-next.v;
         '*': res:=v*next.v;
         '^': res:=power(v,2);
         '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
