@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg;
+  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg,
+  Buttons;
 
 
 type
@@ -41,7 +42,6 @@ type
     ButtonD: TButton;
     ButtonE: TButton;
     ButtonF: TButton;
-    ButtonCe: TButton;
     ButtonPl: TButton;
     ButtonMn: TButton;
     ButtonMl: TButton;
@@ -67,6 +67,7 @@ type
     shp2: TShape;
     shp3: TShape;
     shp4: TShape;
+    ButtonCe: TBitBtn;
     procedure AfterConstruction; override;
     procedure AllButtonsClick(Sender: TObject);
     procedure CanselButtonClick(Sender: TObject);
@@ -76,6 +77,7 @@ type
     procedure ButtonMClick(Sender: TObject);
     procedure ButtonMrClick(Sender: TObject);
     procedure ButttonMcClick(Sender: TObject);
+    procedure Paint; override;
 
    private
     function Checker(s: String): Boolean;
@@ -121,7 +123,8 @@ var
   MAXInt2Binary : Int64 = 1073741823;        //maximum for 30 symbols + see AfterConstruction
   MAXInt2Hex : Int64 = 9223372036854775807;   //maximum Integer Number of Int64
   All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];
-
+  DotSymbol : Char = ',';
+  Once : Boolean=true;
 
 { TForm1 }
 
@@ -154,7 +157,7 @@ begin
       if (a_last = Sqr) and (a_passed = Sqr) then exit;
 
       //replace '0-...' to '-...'
-      if (t='0') and not (a_passed in  All_Operations-[Mn, Sqr]) then t:=s else t:=t+s;
+      if (t='0') and (s in  ['0'..'9', 'A'..'F', Char(Sqr), Char(Mn)]) then t:=s else t:=t+s;
 
       Label4.Caption:=t;
       BorderText;
@@ -169,7 +172,7 @@ begin
     if OverflowError then exit;
     t:=Label4.Caption;
     c:=t[Length(t)]; //last simbol of the string
-    if c =',' then StopDot:=false;  //to do!!!!!
+    if c =DotSymbol then StopDot:=false;  //to do!!!!!
     Delete(t, Length(t),1);
     if t=''  then t:='0';
     Label4.Caption:=t;
@@ -219,12 +222,12 @@ begin
     t:=StringReplace(t, 'v','*1v', [rfReplaceAll]);
     t:=StringReplace(t, '^','^0', [rfReplaceAll]);
     t:=StringReplace(t, '+-','-', [rfReplaceAll]);
-    t:=ReplaceRegExpr('([\d,])-', t, '$1~', True);
+    t:=ReplaceRegExpr('([\d'+DotSymbol+'A-F])-', t, '$1~', True);
 
 
     //splite with REGEX!
     Expression1 := '[v^/*+~]+';
-    Expression2 := '[-,0-9A-F]+';
+    Expression2 := '[-'+DotSymbol+'0-9A-F]+';
     Regex1:=TRegExpr.Create(Expression1);
     Regex2:=TRegExpr.Create(Expression2);
     Regex1.Split(t, Pieces1);
@@ -259,8 +262,7 @@ begin
    SymplifyOperations(Operation);
    PrevNumberSystem:=NumberSystem;
    t:= ConwertTo(Operation.v);
-   if AnsiContainsText(t, ',') then StopDot:=true;
-
+   if AnsiContainsText(t, DotSymbol) then StopDot:=true else StopDot:=false;
 
    Label4.Caption:=t;
    Label2.Caption:=IntToStr(Length(t));
@@ -310,12 +312,12 @@ function TForm1.Checker(s: String): Boolean;
 var c: Char;
 begin
       c:=s[1];
-      if not (c in ['0'..'9', ','])  then StopDot:=false;
+      if not (c in ['0'..'9', DotSymbol])  then StopDot:=false;
       Checker:=false;
       //checks if Label4+s doesn't exeeds max length
       if (Length(Label4.Caption)+Length(s))>maxNumberWidth then Checker:=true;
-      if (s=',') and StopDot then Checker:=true;
-      if s=',' then StopDot:=true;
+      if (s=DotSymbol) and StopDot then Checker:=true;
+      if s=DotSymbol then StopDot:=true;
 end;
 
 
@@ -394,7 +396,7 @@ begin
                  f:='%0.'+IntToStr(MAXpresision)+'f'; // '%0.16f'
                  t:=Format(f, [d]);
                  t:=TrimRight(t,'0');
-                 t:=TrimRight(t, ',');
+                 t:=TrimRight(t, DotSymbol);
                  if t='' then t:='0';
            end;
      Bin : begin
@@ -439,6 +441,7 @@ end;
 
 
 procedure TForm1.AfterConstruction;
+
 begin
   inherited;
   RadioButtons[1]:=RadioButton1;
@@ -462,9 +465,37 @@ begin
   NumberSystem:=Dec;
   PrevNumberSystem:=Dec;
   MemoryString:=0;
+  //set max screen length
   MAXInt2Binary:=Round(Power(2, MAXNumberWidth))-1;
   Label3.Caption:=Label3.Caption+' '+IntToStr(MAXNumberWidth);
+  //set dot symbol accordilly to the local settings
+  DotSymbol:=FloatToStr(1/10)[2];
+  ButtonDot.Caption:=DotSymbol;
+
 end;
+
+
+procedure TForm1.Paint;
+var
+  p: TPoint;
+  i : Integer;
+begin
+
+  inherited;
+  if Once then begin
+        ImgSqrt.Repaint;
+        ImgPow.Repaint;
+        Button0.Repaint;
+        Once:=False;
+        p:=Button0.ClientToScreen(Point(3,3));
+        Form1.shp1.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
+        Form1.shp2.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
+        Form1.shp3.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
+        Form1.shp2.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
+        for i:=0 to ComponentCount-1 do TControl(Components[i]).Repaint;
+    end;
+end;
+
 
 
 
