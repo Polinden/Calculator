@@ -1,49 +1,58 @@
 object Form1: TForm1
-  Left = 400
+  Left = 396
   Top = 188
   BorderIcons = [biSystemMenu]
-  BorderStyle = bsDialog
+  BorderStyle = bsSingle
   BorderWidth = 3
   Caption = 'Calculator'
-  ClientHeight = 522
-  ClientWidth = 709
-  Color = clActiveBorder
+  ClientHeight = 515
+  ClientWidth = 721
+  Color = clSilver
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clActiveBorder
   Font.Height = -21
   Font.Name = 'Tahoma'
   Font.Style = []
+  KeyPreview = True
+  Menu = MainMenu
   OldCreateOrder = True
+  OnKeyPress = Test
   PixelsPerInch = 96
   TextHeight = 25
   object shp4: TShape
-    Left = 546
+    Left = 554
     Top = 332
     Width = 145
     Height = 33
+    Brush.Color = clBtnFace
+    Pen.Color = clBtnShadow
     Pen.Width = 2
   end
   object shp3: TShape
-    Left = 546
+    Left = 554
     Top = 282
     Width = 145
     Height = 33
+    Brush.Color = clBtnFace
+    Pen.Color = clBtnShadow
     Pen.Width = 2
   end
   object shp1: TShape
-    Left = 544
+    Left = 552
     Top = 280
     Width = 145
     Height = 33
-    Pen.Color = clWhite
+    Brush.Color = clBtnFace
+    Pen.Color = clBtnHighlight
+    Pen.Style = psInsideFrame
   end
   object Label1: TLabel
-    Left = 10
+    Left = 18
     Top = 488
     Width = 167
     Height = 19
     Caption = 'Simbols on the screen: '
-    Color = clActiveBorder
+    Color = clSilver
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -53,12 +62,12 @@ object Form1: TForm1
     ParentFont = False
   end
   object Label2: TLabel
-    Left = 177
+    Left = 185
     Top = 488
     Width = 9
     Height = 19
     Caption = '1'
-    Color = clActiveBorder
+    Color = clSilver
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -68,12 +77,12 @@ object Form1: TForm1
     ParentFont = False
   end
   object Label3: TLabel
-    Left = 209
+    Left = 217
     Top = 488
     Width = 74
     Height = 19
     Caption = 'Maximum '
-    Color = clActiveBorder
+    Color = clSilver
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -16
@@ -83,14 +92,16 @@ object Form1: TForm1
     ParentFont = False
   end
   object shp2: TShape
-    Left = 544
+    Left = 552
     Top = 330
     Width = 145
     Height = 33
-    Pen.Color = clWhite
+    Brush.Color = clBtnFace
+    Pen.Color = clBtnHighlight
+    Pen.Style = psInsideFrame
   end
   object ImgPow: TImage
-    Left = 544
+    Left = 552
     Top = 330
     Width = 153
     Height = 23
@@ -123,7 +134,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ImgSqrt: TImage
-    Left = 550
+    Left = 558
     Top = 280
     Width = 139
     Height = 33
@@ -181,7 +192,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button1: TButton
-    Left = 362
+    Left = 370
     Top = 88
     Width = 145
     Height = 33
@@ -192,11 +203,11 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 0
+    TabOrder = 1
     OnClick = AllButtonsClick
   end
   object ButtonPl: TButton
-    Left = 546
+    Left = 554
     Top = 88
     Width = 145
     Height = 33
@@ -207,11 +218,11 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 1
+    TabOrder = 2
     OnClick = AllButtonsClick
   end
   object ButtonMn: TButton
-    Left = 546
+    Left = 554
     Top = 136
     Width = 145
     Height = 33
@@ -222,11 +233,11 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 2
+    TabOrder = 3
     OnClick = AllButtonsClick
   end
   object ButtonEq: TButton
-    Left = 546
+    Left = 554
     Top = 424
     Width = 145
     Height = 81
@@ -237,11 +248,11 @@ object Form1: TForm1
     Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
-    TabOrder = 3
+    TabOrder = 0
     OnClick = FinalCalculationButtonClick
   end
   object ButtonMl: TButton
-    Left = 546
+    Left = 554
     Top = 184
     Width = 145
     Height = 33
@@ -256,7 +267,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button2: TButton
-    Left = 194
+    Left = 202
     Top = 136
     Width = 145
     Height = 33
@@ -271,7 +282,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button3: TButton
-    Left = 362
+    Left = 370
     Top = 136
     Width = 145
     Height = 33
@@ -286,7 +297,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button4: TButton
-    Left = 194
+    Left = 202
     Top = 184
     Width = 145
     Height = 33
@@ -301,7 +312,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button0: TButton
-    Left = 194
+    Left = 202
     Top = 88
     Width = 145
     Height = 33
@@ -316,7 +327,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonDv: TButton
-    Left = 546
+    Left = 554
     Top = 232
     Width = 145
     Height = 33
@@ -331,7 +342,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button6: TButton
-    Left = 194
+    Left = 202
     Top = 232
     Width = 145
     Height = 33
@@ -346,7 +357,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button7: TButton
-    Left = 362
+    Left = 370
     Top = 232
     Width = 145
     Height = 33
@@ -361,7 +372,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button8: TButton
-    Left = 194
+    Left = 202
     Top = 280
     Width = 145
     Height = 33
@@ -376,7 +387,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button5: TButton
-    Left = 362
+    Left = 370
     Top = 184
     Width = 145
     Height = 33
@@ -391,7 +402,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object Button9: TButton
-    Left = 362
+    Left = 370
     Top = 280
     Width = 145
     Height = 33
@@ -406,7 +417,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonDot: TButton
-    Left = 10
+    Left = 18
     Top = 440
     Width = 145
     Height = 33
@@ -421,7 +432,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonDel: TButton
-    Left = 18
+    Left = 26
     Top = 136
     Width = 145
     Height = 33
@@ -436,7 +447,7 @@ object Form1: TForm1
     OnClick = BackSpaceClick
   end
   object Panel1: TPanel
-    Left = 10
+    Left = 18
     Top = 16
     Width = 679
     Height = 44
@@ -463,7 +474,7 @@ object Form1: TForm1
     end
   end
   object GroupBox1: TGroupBox
-    Left = 10
+    Left = 18
     Top = 256
     Width = 145
     Height = 169
@@ -490,7 +501,7 @@ object Form1: TForm1
       ParentFont = False
       TabOrder = 0
       TabStop = True
-      OnClick = ConwerterSwitch
+      OnClick = ConverterSwitch
     end
     object RadioButton2: TRadioButton
       Left = 16
@@ -505,7 +516,7 @@ object Form1: TForm1
       Font.Style = []
       ParentFont = False
       TabOrder = 1
-      OnClick = ConwerterSwitch
+      OnClick = ConverterSwitch
     end
     object RadioButton3: TRadioButton
       Left = 16
@@ -520,11 +531,11 @@ object Form1: TForm1
       Font.Style = []
       ParentFont = False
       TabOrder = 2
-      OnClick = ConwerterSwitch
+      OnClick = ConverterSwitch
     end
   end
   object ButtonA: TButton
-    Left = 194
+    Left = 202
     Top = 344
     Width = 145
     Height = 33
@@ -540,7 +551,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonB: TButton
-    Left = 362
+    Left = 370
     Top = 344
     Width = 145
     Height = 33
@@ -556,7 +567,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonC: TButton
-    Left = 194
+    Left = 202
     Top = 392
     Width = 145
     Height = 33
@@ -572,7 +583,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonD: TButton
-    Left = 362
+    Left = 370
     Top = 392
     Width = 145
     Height = 33
@@ -588,7 +599,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonE: TButton
-    Left = 194
+    Left = 202
     Top = 440
     Width = 145
     Height = 33
@@ -604,7 +615,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonF: TButton
-    Left = 362
+    Left = 370
     Top = 440
     Width = 145
     Height = 33
@@ -620,7 +631,7 @@ object Form1: TForm1
     OnClick = AllButtonsClick
   end
   object ButtonM: TButton
-    Left = 8
+    Left = 16
     Top = 192
     Width = 49
     Height = 41
@@ -629,7 +640,7 @@ object Form1: TForm1
     OnClick = ButtonMClick
   end
   object ButtonMr: TButton
-    Left = 64
+    Left = 72
     Top = 192
     Width = 49
     Height = 41
@@ -638,7 +649,7 @@ object Form1: TForm1
     OnClick = ButtonMrClick
   end
   object ButttonMc: TButton
-    Left = 120
+    Left = 128
     Top = 192
     Width = 49
     Height = 41
@@ -647,7 +658,7 @@ object Form1: TForm1
     OnClick = ButttonMcClick
   end
   object ButtonCe: TBitBtn
-    Left = 18
+    Left = 26
     Top = 88
     Width = 145
     Height = 33
@@ -660,5 +671,20 @@ object Form1: TForm1
     ParentFont = False
     TabOrder = 28
     OnClick = CanselButtonClick
+  end
+  object MainMenu: TMainMenu
+    Left = 120
+    Top = 336
+    object Info1: TMenuItem
+      Caption = 'Info'
+      object About1: TMenuItem
+        Caption = 'About'
+        OnClick = About1Click
+      end
+      object Exit1: TMenuItem
+        Caption = 'Exit'
+        OnClick = Exit1Click
+      end
+    end
   end
 end

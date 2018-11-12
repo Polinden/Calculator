@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg,
-  Buttons;
+  Buttons, Menus;
 
 
 type
@@ -14,10 +14,10 @@ type
   { TOperation }
 
    TOperation = class(TObject)
-      v : Double;
+      v : Extended;
       oper : Char;
       next:   TOperation;
-      function Action : Double;
+      function Action : Extended;
    end;
 
 
@@ -68,23 +68,31 @@ type
     shp3: TShape;
     shp4: TShape;
     ButtonCe: TBitBtn;
+    MainMenu: TMainMenu;
+    Info1: TMenuItem;
+    About1: TMenuItem;
+    Exit1: TMenuItem;
     procedure AfterConstruction; override;
     procedure AllButtonsClick(Sender: TObject);
     procedure CanselButtonClick(Sender: TObject);
     procedure FinalCalculationButtonClick(Sender: TObject);
     procedure BackSpaceClick(Sender: TObject);
-    procedure ConwerterSwitch(Sender: TObject);
+    procedure ConverterSwitch(Sender: TObject);
     procedure ButtonMClick(Sender: TObject);
     procedure ButtonMrClick(Sender: TObject);
     procedure ButttonMcClick(Sender: TObject);
+    procedure Test(Sender: TObject; var Key: Char) ;
+    procedure About1Click(Sender: TObject);
+    procedure Exit1Click(Sender: TObject);
     procedure Paint; override;
 
    private
-    function Checker(s: String): Boolean;
     procedure SymplifyOperations(Operation: TOperation);
     procedure BorderText();
-    function ConwertTo(d: Double): String;
-    function ConwertFrom(s: String): Double;
+    function ConvertTo(d: Extended): String;
+    function ConvertFrom(s: String): Extended;
+    function Checker(s : String): Boolean;
+    function CheckDot(s: String): Boolean;
 
    public
   end;
@@ -109,22 +117,21 @@ implementation
 
 var
   Operation : TOperation;
-  StopDot : boolean = false;
   OverflowError: boolean = false;
   NumberSystem, PrevNumberSystem : TNumberSystem;
   RadioButtons : array [1..3] of TRadioButton;
   DecimalButtons : array [1..9] of TButton;
   HeximalButtons : array [1..6] of TButton;
-  MemoryString : Double;
+  MemoryString : Extended;
 
   //constants
   MAXNumberWidth : Integer =50;              //desired screen WIDTH
-  MAXpresision : Integer=12;
-  MAXInt2Binary : Int64 = 1073741823;        //maximum for 30 symbols + see AfterConstruction
-  MAXInt2Hex : Int64 = 9223372036854775807;   //maximum Integer Number of Int64
-  All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];
-  DotSymbol : Char = ',';
-  Once : Boolean=true;
+  MAXpresision : Integer=12;                 //pressision for formating fload numbers
+  MAXInt2Binary : Int64 = 1073741823;        //maximum for 30 symbols + see AfterConstruction (2**30-1)
+  MAXInt2Hex : Int64 = 9223372036854775806;   //maximum Integer Number of Int64 to check overflow
+  DotSymbol : Char = ',';                     //universal dot symbol for ans local systems
+  RunOnce : Boolean=true;                     //check if it runs once after program starts
+  All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];  //helpfull set of operations
 
 { TForm1 }
 
@@ -156,7 +163,7 @@ begin
       if (a_last = Sq) and (a_passed = Sq) then exit;
       if (a_last = Sqr) and (a_passed = Sqr) then exit;
 
-      //replace '0-...' to '-...'
+      //replace '0-...' in case of ninus, square root or numbers
       if (t='0') and (s in  ['0'..'9', 'A'..'F', Char(Sqr), Char(Mn)]) then t:=s else t:=t+s;
 
       Label4.Caption:=t;
@@ -167,12 +174,9 @@ end;
 
 procedure TForm1.BackSpaceClick(Sender: TObject);
 var t : String;
-    c : Char;
 begin
     if OverflowError then exit;
     t:=Label4.Caption;
-    c:=t[Length(t)]; //last simbol of the string
-    if c =DotSymbol then StopDot:=false;  //to do!!!!!
     Delete(t, Length(t),1);
     if t=''  then t:='0';
     Label4.Caption:=t;
@@ -183,7 +187,6 @@ end;
 
 procedure TForm1.CanselButtonClick(Sender: TObject);
 begin
-      StopDot:=false;
       Label4.Caption:='0';
       OverflowError:=false;
       BorderText;
@@ -195,9 +198,8 @@ var
   Act, Number, t : String;
   Expression1, Expression2 : String;
   Regex1, Regex2 : TRegExpr;
-  Pieces1, Pieces2 : TStringList;//list of strings with varring length (rubber)
+  Pieces1, Pieces2 : TStringList;//list of strings with flexible length (rubber)
   CurOper : TOperation;
-  c : Char;
   ic : Word;
 begin
   if OverflowError then exit;
@@ -215,7 +217,6 @@ begin
     t:=TrimRight(t, 'v');
     t:=TrimRight(t, '/');
     t:=TrimRight(t, '*');
-    if (Length(t)>0) and (t[1]='v') then t:='1'+t else t:='0'+t;
 
     //prepare complex operations
     t:=StringReplace(t, '-v','-1*v', [rfReplaceAll]);
@@ -223,6 +224,9 @@ begin
     t:=StringReplace(t, '^','^0', [rfReplaceAll]);
     t:=StringReplace(t, '+-','-', [rfReplaceAll]);
     t:=ReplaceRegExpr('([\d'+DotSymbol+'A-F])-', t, '$1~', True);
+
+
+
 
 
     //splite with REGEX!
@@ -253,7 +257,7 @@ begin
         Number:=Pieces1.Strings[ic];
         if Number<>'' then
            begin
-               CurOper.v:=ConwertFrom(Number);
+               CurOper.v:=ConvertFrom(Number);
                CurOper:=CurOper.next;
            end;
     end;
@@ -261,14 +265,13 @@ begin
    //calculate chain
    SymplifyOperations(Operation);
    PrevNumberSystem:=NumberSystem;
-   t:= ConwertTo(Operation.v);
-   if AnsiContainsText(t, DotSymbol) then StopDot:=true else StopDot:=false;
+   t:= ConvertTo(Operation.v);
 
    Label4.Caption:=t;
    Label2.Caption:=IntToStr(Length(t));
 
 
-   //show message if error
+   //show message if error (all errors happened during development)
   except
     on E: TMyErrorOverflow do begin
           Label4.Caption:='ERROR, OVERFLOW! ';
@@ -306,32 +309,19 @@ end;
 
 
 
-//check if input has mistakes
-//s is a string which we try to add to Label4
-function TForm1.Checker(s: String): Boolean;
-var c: Char;
-begin
-      c:=s[1];
-      if not (c in ['0'..'9', DotSymbol])  then StopDot:=false;
-      Checker:=false;
-      //checks if Label4+s doesn't exeeds max length
-      if (Length(Label4.Caption)+Length(s))>maxNumberWidth then Checker:=true;
-      if (s=DotSymbol) and StopDot then Checker:=true;
-      if s=DotSymbol then StopDot:=true;
-end;
-
-
-
-procedure TForm1.ConwerterSwitch(Sender: TObject);
+//switch number system ti radiobuttons pressed
+procedure TForm1.ConverterSwitch(Sender: TObject);
 var ic: byte;
 
 begin
-
+    //find what was pressed
     PrevNumberSystem:=NumberSystem;
     for ic:=1 to Length(RadioButtons) do if RadioButtons[ic].Checked then NumberSystem:=TNumberSystem(ic);
+    //recalculate screen
     FinalCalculationButtonClick(Sender);
     BorderText;
 
+    //dissable buttons
     case NumberSystem of
        Dec :  begin
                     for ic:=1 to Length(DecimalButtons) do DecimalButtons[ic].Enabled:=True;
@@ -351,7 +341,7 @@ begin
     end;
 
 
-
+//status line on the bottom shows screen width and free space
 procedure TForm1.BorderText();
 begin
   Label2.Font.color:=clBlack;
@@ -362,31 +352,37 @@ end;
 
 //input converter
 //s is a string, containing a number in PrevNumberSystem (e.g., in Hex '5A')
-//result is double type (e.g., 90.0)
-function TForm1.ConwertFrom(s: String): Double;
-var  v : Double;
+//result is Extended type (e.g., 90.0)
+function TForm1.ConvertFrom(s: String): Extended;
+var  v : Extended;
      i, l : Integer;
+     hex_minus : boolean;
 begin
   v:=0;
   case PrevNumberSystem of
      Dec : v:=StrToFloat(s);//convert string to extended
      Bin : begin
                  l:=length(s);
-                 //for i := 0 to l-1 do v:=v+((ord(s[l-i])-48) shl i); //'ord' is a number codding this symbol
                  for i:=l downto 1 do v:=v+ StrToInt64(s[i])*power(2,l-i);
            end;
      Hex : begin
-                 v:=StrToInt64('$'+s); //convert Hex string to integer
+                 hex_minus:=s[1]='-';            //to enable hex minus
+                 s:=TrimLeft(s, '-');
+                 v:=StrToInt64('$'+s);            //convert Hex string to integer
+                 //check, check and again check...
+                 if  Format('%x', [Round(v)]) <> s then raise EConvertError.Create('');
+                 if (v<0) or (v > MAXInt2Hex) then raise TMyErrorOverflow.Create('');
+                 if hex_minus then v:=-1*v;
            end;
   end;
-ConwertFrom:=v;
+ConvertFrom:=v;
 end;
 
 
 //confert from  digital to any output  based of  NumberSystem
-function TForm1.ConwertTo(d: Double): String;
+function TForm1.ConvertTo(d: Extended): String;
 var  t,f : String;
-     absD : Double;
+     absD : Extended;
      roundD : Int64;
 begin
   t:='';
@@ -413,9 +409,10 @@ begin
                  if absD>MAXInt2Hex then raise TMyErrorOverflow.Create('');
                  roundD:=Round(absD);
                  t:=Format('%x', [roundD]);
+                 if d<0 then t:='-'+t;       //hex minus
            end;
   end;
-  ConwertTo:=t;
+  ConvertTo:=t;
 end;
 
 
@@ -440,10 +437,40 @@ end;
 
 
 
-procedure TForm1.AfterConstruction;
 
+//check if input has mistakes
+//s is a string which we try to add to Label4
+function TForm1.Checker(s: String): Boolean;
+var c : Char;
+begin
+      //check for dot pressed twice
+      if CheckDot(s)  and (s=DotSymbol) then Checker:=true else Checker:=false;
+      //not to put dot without a number
+      c:=Label4.Caption[Length(Label4.Caption)];
+      if (not(c in ['0'..'9','A'..'F'])) and (s=DotSymbol) then Checker:=true;
+      //checks if Label4+s doesn't exeeds max length
+      if (Length(Label4.Caption))>maxNumberWidth then Checker:=true;
+end;
+
+
+//helper - to check with regex
+function TForm1.CheckDot(s: String): Boolean;
+var Regex : TRegExpr;
+    Expr : String;
+begin
+    Expr:='[-0-9A-F]*\'+DotSymbol+'[0-9A-F]*$';
+    Regex:=TRegExpr.Create(Expr);
+    if Regex.Exec(Label4.Caption) then CheckDot:=True else CheckDot:=False;
+    Regex.Free;
+end;
+
+
+//is called when progran is rerady
+procedure TForm1.AfterConstruction;
+var fs : TFormatSettings;
 begin
   inherited;
+  //prepare arrays of buttons
   RadioButtons[1]:=RadioButton1;
   RadioButtons[2]:=RadioButton2;
   RadioButtons[3]:=RadioButton3;
@@ -469,42 +496,17 @@ begin
   MAXInt2Binary:=Round(Power(2, MAXNumberWidth))-1;
   Label3.Caption:=Label3.Caption+' '+IntToStr(MAXNumberWidth);
   //set dot symbol accordilly to the local settings
-  DotSymbol:=FloatToStr(1/10)[2];
+  GetLocaleFormatSettings(LOCALE_SYSTEM_DEFAULT, fs);
+  DotSymbol:=fs.DecimalSeparator;
   ButtonDot.Caption:=DotSymbol;
-
 end;
-
-
-procedure TForm1.Paint;
-var
-  p: TPoint;
-  i : Integer;
-begin
-
-  inherited;
-  if Once then begin
-        ImgSqrt.Repaint;
-        ImgPow.Repaint;
-        Button0.Repaint;
-        Once:=False;
-        p:=Button0.ClientToScreen(Point(3,3));
-        Form1.shp1.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
-        Form1.shp2.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
-        Form1.shp3.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
-        Form1.shp2.Brush.Color:= GetPixel(GetDC(0), p.X, p.Y);
-        for i:=0 to ComponentCount-1 do TControl(Components[i]).Repaint;
-    end;
-end;
-
-
-
 
 
 
   { TOperation }
-
-   function TOperation.Action : Double;
-      var res : Double;
+   //any operation knows how to simplify itself
+   function TOperation.Action : Extended;
+      var res : Extended;
       begin
         res:=0;
         case oper of
@@ -520,27 +522,80 @@ end;
           next:=next.next;
       end;
 
-
+//memorise
 procedure TForm1.ButtonMClick(Sender: TObject);
 begin
    FinalCalculationButtonClick(Sender);
-   MemoryString:= ConwertFrom(Label4.Caption);
+   MemoryString:= ConvertFrom(Label4.Caption);
 end;
 
+//read from memory
 procedure TForm1.ButtonMrClick(Sender: TObject);
 var t:string;
 begin
-   t:=ConwertTo(MemoryString);
+   t:=ConvertTo(MemoryString);
    if Checker(t) then Exit;
    if Label4.Caption = '0' then Label4.Caption:=t
      else Label4.Caption:= Label4.Caption + t;
    BorderText;
 end;
 
+//clean memory
 procedure TForm1.ButttonMcClick(Sender: TObject);
 begin
   MemoryString:=0;
 end;
+
+//test feature - key pressed enter
+procedure TForm1.Test(Sender: TObject; var Key: Char) ;
+var b_temp: TButton;
+begin
+    if Key in [',', '.'] then Key:=DotSymbol;
+    if (not ButtonDot.Enabled) and (Key=DotSymbol) then exit;  //no more dots
+
+    b_temp:=TButton.Create(Self);   //temporary virtual button
+    b_temp.Caption:=Key;
+    ButtonEq.SetFocus;   //for easy pressing Enter = Calculate
+    case Ord(Key) of
+        42..57:   //these are oll symbols 0..9  +-/*,.
+        begin
+                AllButtonsClick(b_temp);
+        end;
+        27:     CanselButtonClick(b_temp);
+        8:      BackSpaceClick(b_temp);
+    end;
+    b_temp.Free;
+end;
+
+
+
+procedure TForm1.About1Click(Sender: TObject);
+begin
+  MessageDlg('Polina'+Char(39)+'s Homework. Liceum KPNL 145. Kiev. 2018. All rights reserved. Read more on GitHub', mtInformation, [mbOK], 0);
+end;
+
+
+procedure TForm1.Exit1Click(Sender: TObject);
+begin
+   Application.Terminate;
+end;
+
+
+//this is a cratch (KOSTYL)
+//images position was unstable :(
+//papa helped! for me is a magic
+procedure TForm1.Paint;
+var i : Byte;
+begin
+      inherited;
+      if RunOnce then begin
+         ImgSqrt.Refresh;
+         ImgPow.Refresh;
+         RunOnce:=False;
+         for i:=1 to Length(RadioButtons) do RadioButtons[i].Refresh;
+      end;
+end;
+
 
 {$R *.dfm}
 

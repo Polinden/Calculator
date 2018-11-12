@@ -1,4 +1,4 @@
-program Project1;
+program Calculator;
 
 uses
   Forms,
