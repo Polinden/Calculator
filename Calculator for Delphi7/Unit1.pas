@@ -11,7 +11,7 @@ uses
 type
 
 
-  { TOperation }
+
 
    TOperation = class(TObject)
       v : Extended;
@@ -22,7 +22,7 @@ type
 
 
 
-  { TForm1 }
+
 
   TForm1 = class(TForm)
 
@@ -87,12 +87,15 @@ type
     procedure Paint; override;
 
    private
+    function DoCalculate(s: String): String;
     procedure SymplifyOperations(Operation: TOperation);
     procedure BorderText();
     function ConvertTo(d: Extended): String;
     function ConvertFrom(s: String): Extended;
     function Checker(s : String): Boolean;
     function CheckDot(s: String): Boolean;
+    function PrepareUnaryOperations(s: String): string;
+    procedure TestMe;
 
    public
   end;
@@ -124,6 +127,8 @@ var
   HeximalButtons : array [1..6] of TButton;
   MemoryString : Extended;
 
+
+
   //constants
   MAXNumberWidth : Integer =50;              //desired screen WIDTH
   MAXpresision : Integer=12;                 //pressision for formating fload numbers
@@ -133,7 +138,10 @@ var
   RunOnce : Boolean=true;                     //check if it runs once after program starts
   All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];  //helpfull set of operations
 
-{ TForm1 }
+
+
+
+
 
 procedure TForm1.AllButtonsClick(Sender: TObject);
 var   t: String;
@@ -193,120 +201,14 @@ begin
 end;
 
 
-procedure TForm1.FinalCalculationButtonClick(Sender: TObject);
-var
-  Act, Number, t : String;
-  Expression1, Expression2 : String;
-  Regex1, Regex2 : TRegExpr;
-  Pieces1, Pieces2 : TStringList;//list of strings with flexible length (rubber)
-  CurOper : TOperation;
-  ic : Word;
+
+//status line on the bottom shows screen width and free space
+procedure TForm1.BorderText();
 begin
-  if OverflowError then exit;
-
-  t:=Label4.Caption;
-
-  //prevent format errors
-  try
-  try
-    Pieces1 := TStringList.Create;
-    Pieces2 := TStringList.Create;
-    Operation:=TOperation.Create;
-
-    //sort out stupidities
-    t:=TrimRight(t, 'v');
-    t:=TrimRight(t, '/');
-    t:=TrimRight(t, '*');
-
-    //prepare complex operations
-    t:=StringReplace(t, '-v','-1*v', [rfReplaceAll]);
-    t:=StringReplace(t, 'v','*1v', [rfReplaceAll]);
-    t:=StringReplace(t, '^','^0', [rfReplaceAll]);
-    t:=StringReplace(t, '+-','-', [rfReplaceAll]);
-    t:=ReplaceRegExpr('([\d'+DotSymbol+'A-F])-', t, '$1~', True);
-
-
-
-
-
-    //splite with REGEX!
-    Expression1 := '[v^/*+~]+';
-    Expression2 := '[-'+DotSymbol+'0-9A-F]+';
-    Regex1:=TRegExpr.Create(Expression1);
-    Regex2:=TRegExpr.Create(Expression2);
-    Regex1.Split(t, Pieces1);
-    Regex2.Split(t, Pieces2);
-
-
-    //prepare chain of operations
-    CurOper:=Operation;
-    for ic:=0 to Pieces2.Count-1 do
-    begin
-        Act:=Pieces2.Strings[ic];
-        if Act<>'' then
-           begin
-               CurOper.oper:=Act[1];
-               CurOper.next:=TOperation.Create;
-               CurOper:=CurOper.next;
-           end;
-    end;
-
-    CurOper:=Operation;
-    for ic:=0 to Pieces1.Count-1 do
-    begin
-        Number:=Pieces1.Strings[ic];
-        if Number<>'' then
-           begin
-               CurOper.v:=ConvertFrom(Number);
-               CurOper:=CurOper.next;
-           end;
-    end;
-
-   //calculate chain
-   SymplifyOperations(Operation);
-   PrevNumberSystem:=NumberSystem;
-   t:= ConvertTo(Operation.v);
-
-   Label4.Caption:=t;
-   Label2.Caption:=IntToStr(Length(t));
-
-
-   //show message if error (all errors happened during development)
-  except
-    on E: TMyErrorOverflow do begin
-          Label4.Caption:='ERROR, OVERFLOW! ';
-          OverflowError:=True;
-    end;
-    on E: EOverflow  do begin
-          Label4.Caption:='ERROR, OVERFLOW! ';
-          OverflowError:=True;
-    end;
-    on E: EInvalidOp  do begin
-          Label4.Caption:='ERROR, OVERFLOW! ';
-          OverflowError:=True;
-    end;
-    on E: EConvertError do begin
-          Label4.Caption:='CONVERSION ERROR! ';
-          OverflowError:=True;
-    end;
-    on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend: '+E.Message+' !');
-  end;
-
-   //for sure - free memory for all created objects
-  finally
-    CurOper:=Operation;
-    while (CurOper<>Nil) do begin
-        Operation:=CurOper;
-        CurOper:=CurOper.next;
-        Operation.free;
-    end;
-    Pieces1.free();
-    Pieces2.free();
-    Regex1.Free;
-    Regex2.Free;
-  end;
+  Label2.Font.color:=clBlack;
+  Label2.Caption:=IntToStr(Length(Label4.Caption));//IntToStr - convert integer number to string
+  if Length(Label4.Caption)=(MAXNumberWidth) then   Label2.Font.color:=clRed;
 end;
-
 
 
 //switch number system ti radiobuttons pressed
@@ -341,18 +243,142 @@ begin
     end;
 
 
-//status line on the bottom shows screen width and free space
-procedure TForm1.BorderText();
+
+//Calculate expressin
+procedure TForm1.FinalCalculationButtonClick(Sender: TObject);
+var t : string;
 begin
-  Label2.Font.color:=clBlack;
-  Label2.Caption:=IntToStr(Length(Label4.Caption));//IntToStr - convert integer number to string
-  if Length(Label4.Caption)=(MAXNumberWidth) then   Label2.Font.color:=clRed;
+    if OverflowError then exit;
+    t:=Label4.Caption;
+
+    //sort out stupidities
+    t:=TrimRight(t, 'v');
+    t:=TrimRight(t, '/');
+    t:=TrimRight(t, '*');
+
+    //prepare complex operations
+    t:=PrepareUnaryOperations(t);
+
+    //main function call
+    Label4.Caption:=DoCalculate(t);
+    BorderText;
 end;
+
+
+
+//cope with unari operations such as v,^ and -
+function TForm1.PrepareUnaryOperations(s: String): string;
+begin
+    s:=StringReplace(s, '-v','-1*v', [rfReplaceAll]);
+    s:=StringReplace(s, 'v','*1v', [rfReplaceAll]);
+    s:=StringReplace(s, '^','^0', [rfReplaceAll]);
+    s:=StringReplace(s, '+-','-', [rfReplaceAll]);
+    s:=ReplaceRegExpr('([\d'+DotSymbol+'A-F])-', s, '$1~', True);
+    PrepareUnaryOperations:=s;
+end;
+
+
+
+
+//!!!!!!!!!!!!!!
+//MAIN PROCEDURE
+//!!!!!!!!!!!!!!
+function TForm1.DoCalculate(s: String): String;
+var
+      Act, Number: String;
+      Expression1, Expression2 : String;
+      Regex1, Regex2 : TRegExpr;
+      Pieces1, Pieces2 : TStringList;//list of strings with flexible length (rubber)
+      CurOper : TOperation;
+      ic : Word;
+
+begin
+    try
+    try
+        //create objects - flexible lists
+        Pieces1 := TStringList.Create;
+        Pieces2 := TStringList.Create;
+
+        //splite with REGEX!
+        Expression1 := '[v^/*+~]+';
+        Expression2 := '[-'+DotSymbol+'0-9A-F]+';
+        Regex1:=TRegExpr.Create(Expression1);
+        Regex2:=TRegExpr.Create(Expression2);
+        Regex1.Split(s, Pieces1);
+        Regex2.Split(s, Pieces2);
+
+        //drop 1-st and last '' (broken by numbers)
+        Pieces2.Delete(0);
+        Pieces2.Delete(Pieces2.Count-1);
+
+        //prepare chain of operations
+        Operation:=TOperation.Create;
+        CurOper:=Operation;
+        for ic:=1 to Pieces2.Count do
+        begin
+            Act:=Pieces2.Strings[ic-1];
+            CurOper.oper:=Act[1];
+            CurOper.next:=TOperation.Create;
+            CurOper:=CurOper.next;
+        end;
+
+
+        CurOper:=Operation;
+        for ic:=1 to Pieces1.Count do
+        begin
+            Number:=Pieces1.Strings[ic-1];
+            CurOper.v:=ConvertFrom(Number);
+            CurOper:=CurOper.next;
+        end;
+
+       //calculate chain
+       SymplifyOperations(Operation);
+       PrevNumberSystem:=NumberSystem;
+       DoCalculate:= ConvertTo(Operation.v);
+
+
+    //show message if error (all errors happened during development)
+    except
+        on E: TMyErrorOverflow do begin
+              DoCalculate:='ERROR, OVERFLOW! ';
+              OverflowError:=True;
+        end;
+        on E: EOverflow  do begin
+              DoCalculate:='ERROR, OVERFLOW! ';
+              OverflowError:=True;
+        end;
+        on E: EInvalidOp  do begin
+              DoCalculate:='ERROR, OVERFLOW! ';
+              OverflowError:=True;
+        end;
+        on E: EConvertError do begin
+              DoCalculate:='CONVERSION ERROR! ';
+              OverflowError:=True;
+        end;
+        on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend: '+E.Message+' !');
+    end;
+
+    //for sure - free memory for all created objects
+    finally
+        CurOper:=Operation;
+        while (CurOper<>Nil) do begin
+            Operation:=CurOper;
+            CurOper:=CurOper.next;
+            Operation.free;
+        end;
+        Pieces1.free();
+        Pieces2.free();
+        Regex1.Free;
+        Regex2.Free;
+    end;
+end;
+
 
 
 //input converter
 //s is a string, containing a number in PrevNumberSystem (e.g., in Hex '5A')
 //result is Extended type (e.g., 90.0)
+//!!!raises exeptions EConvertError and TMyErrorOverflow
 function TForm1.ConvertFrom(s: String): Extended;
 var  v : Extended;
      i, l : Integer;
@@ -380,6 +406,7 @@ end;
 
 
 //confert from  digital to any output  based of  NumberSystem
+//!!!raises exeptions TMyErrorOverflow
 function TForm1.ConvertTo(d: Extended): String;
 var  t,f : String;
      absD : Extended;
@@ -465,6 +492,7 @@ begin
 end;
 
 
+
 //is called when progran is rerady
 procedure TForm1.AfterConstruction;
 var fs : TFormatSettings;
@@ -499,28 +527,12 @@ begin
   GetLocaleFormatSettings(LOCALE_SYSTEM_DEFAULT, fs);
   DotSymbol:=fs.DecimalSeparator;
   ButtonDot.Caption:=DotSymbol;
+  ///IF TESTING
+  TestMe;
 end;
 
 
 
-  { TOperation }
-   //any operation knows how to simplify itself
-   function TOperation.Action : Extended;
-      var res : Extended;
-      begin
-        res:=0;
-        case oper of
-        '+': res:=v+next.v;
-        '~': res:=v-next.v;
-        '*': res:=v*next.v;
-        '^': res:=power(v,2);
-        '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
-        'v': if next.v<0 then raise TMyErrorOverflow.Create('') else res:=sqrt(next.v);
-        end;
-          v:=res;
-          oper:=next.oper;
-          next:=next.next;
-      end;
 
 //memorise
 procedure TForm1.ButtonMClick(Sender: TObject);
@@ -597,7 +609,67 @@ begin
 end;
 
 
+
+
+
+{ TOperation }
+ //any operation knows how to simplify itself
+ function TOperation.Action : Extended;
+    var res : Extended;
+    begin
+      res:=0;
+      case oper of
+      '+': res:=v+next.v;
+      '~': res:=v-next.v;
+      '*': res:=v*next.v;
+      '^': res:=power(v,2);
+      '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
+      'v': if next.v<0 then raise TMyErrorOverflow.Create('') else res:=sqrt(next.v);
+      end;
+        v:=res;
+        oper:=next.oper;
+        next:=next.next;
+    end;
+
+
+
+//Test. Show message if test failed
+//To disable - comment out a string in AfterCreated
+procedure TForm1.TestMe;
+var test_str : array [1..2] of string;
+    test_result : array [1..2] of string;
+    d1, d2 : Extended;
+    actual_result: string;
+    i,l : Integer;
+begin
+       //test1
+       test_str[1]:='-0/4v6';
+       test_result[1]:='0';
+
+       //test2
+       test_str[2]:='0/4+41.5*106.1+-45.2v9/31.2^*21-3.12/44.5+25^v6.3+1414.45*32.5v32*32/3';
+       test_result[2]:='2779765.8897822932';
+
+
+       for i:=1 to Length( test_str) do begin
+           test_str[i]:=ReplaceRegExpr('\.', test_str[i], DotSymbol, True);
+           test_result[i]:=ReplaceRegExpr('\.', test_result[i], DotSymbol, True);
+
+           test_str[i]:=PrepareUnaryOperations(test_str[i]);
+           actual_result:=DoCalculate(test_str[i]);
+
+           d1:=StrToFloat(actual_result);
+           d2:=StrToFloat(test_result[i]);
+
+           if Abs(d1-d2)>0.0001 then
+                   ShowMessage(Format('TEST FAILED! expected=%s, result=%s', [test_result[i], actual_result]));
+       end;
+end;
+
+
+
 {$R *.dfm}
 
 
+//program
 end.
