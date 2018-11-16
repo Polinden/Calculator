@@ -16,7 +16,7 @@ object Form1: TForm1
   KeyPreview = True
   Menu = MainMenu
   OldCreateOrder = True
-  OnKeyPress = Test
+  OnKeyPress = KeyOnFormPressed
   PixelsPerInch = 96
   TextHeight = 25
   object shp4: TShape

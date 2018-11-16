@@ -4,8 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg,
-  Buttons, Menus;
+  Dialogs, StdCtrls, ExtCtrls, StrUtils, RegExpr, Math, TrimStr, jpeg, Menus,
+  Buttons;
 
 
 type
@@ -81,7 +81,7 @@ type
     procedure ButtonMClick(Sender: TObject);
     procedure ButtonMrClick(Sender: TObject);
     procedure ButttonMcClick(Sender: TObject);
-    procedure Test(Sender: TObject; var Key: Char) ;
+    procedure KeyOnFormPressed(Sender: TObject; var Key: Char) ;
     procedure About1Click(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
     procedure Paint; override;
@@ -92,8 +92,9 @@ type
     procedure BorderText();
     function ConvertTo(d: Extended): String;
     function ConvertFrom(s: String): Extended;
-    function Checker(s : String): Boolean;
-    function CheckDot(s: String): Boolean;
+    function Checker(pressed : Char): Boolean;   overload;
+    function CheckDot: Boolean;
+    function Checker(s : String): Boolean; overload;
     function PrepareUnaryOperations(s: String): string;
     procedure TestMe;
 
@@ -103,9 +104,6 @@ type
 
 
   TNumberSystem = (Dec=1, Hex=2, Bin=3);
-  TActions = (Pl=ord('+'), Mn=ord('-'),Ml=ord('*'),Dv=ord('/'), Sq=ord('^'), Sqr=ord('v'));
-  TMyErrorOverflow=class(Exception);
-
 
 
 
@@ -129,25 +127,30 @@ var
 
 
 
-  //constants
+  //constants  and settings
   MAXNumberWidth : Integer =50;              //desired screen WIDTH
   MAXpresision : Integer=12;                 //pressision for formating fload numbers
   MAXInt2Binary : Int64 = 1073741823;        //maximum for 30 symbols + see AfterConstruction (2**30-1)
   MAXInt2Hex : Int64 = 9223372036854775806;   //maximum Integer Number of Int64 to check overflow
+
+
+  All_Actions : Set of '+'..'v'=['+','-','*','/','^','v'];  //helpfull set of operations
+  All_Dec : Set of '0'..'9'=['0'..'9'];       //helpfull set of numbers
+  All_Hex : Set of 'A'..'F' = ['A'..'F'];     //hex numbers
+
   DotSymbol : Char = ',';                     //universal dot symbol for ans local systems
   RunOnce : Boolean=true;                     //check if it runs once after program starts
-  All_Operations : Set of TActions=[Pl, Mn, Ml, Dv, Sqr, Sq];  //helpfull set of operations
-
-
-
 
 
 
 procedure TForm1.AllButtonsClick(Sender: TObject);
 var   t: String;
-      s, q : Char;
-      a_last, a_passed : TActions;
+      s : Char;
 begin
+      //for easy keyboard using
+      ButtonEq.SetFocus;
+
+
       if OverflowError then CanselButtonClick(Sender);
       //get Name or Caption for pressed object
       //but first cast Sender to nessecary type
@@ -161,18 +164,8 @@ begin
       //check if too long string and if dot is pressed twice
       if Checker(s) then exit;
 
-      //check if too many operation pressed
-      q:=t[Length(t)];  //last symbol on the screen
-      a_last:=TActions(ord(q)); //operation from last symbol on screen
-      a_passed:=TActions(ord(s)); //operation pressed
-      if (a_last in (All_Operations-[Sq])) and (a_passed in (All_Operations-[Mn,Sqr])) then exit;
-      if (a_last = Mn) and (a_passed = Mn) then exit;
-      if (a_last = Sqr) and (a_passed = Mn) then exit;
-      if (a_last = Sq) and (a_passed = Sq) then exit;
-      if (a_last = Sqr) and (a_passed = Sqr) then exit;
-
       //replace '0-...' in case of ninus, square root or numbers
-      if (t='0') and (s in  ['0'..'9', 'A'..'F', Char(Sqr), Char(Mn)]) then t:=s else t:=t+s;
+      if (t='0') and (s in  All_Dec + All_Hex+['v', '-']) then t:=s else t:=t+s;
 
       Label4.Caption:=t;
       BorderText;
@@ -183,9 +176,12 @@ end;
 procedure TForm1.BackSpaceClick(Sender: TObject);
 var t : String;
 begin
+    //for easy keyboard using
+    ButtonEq.SetFocus;
     if OverflowError then exit;
+
     t:=Label4.Caption;
-    Delete(t, Length(t),1);
+    Delete(t, Length(t),1); //remove last symbol
     if t=''  then t:='0';
     Label4.Caption:=t;
     BorderText;
@@ -195,6 +191,9 @@ end;
 
 procedure TForm1.CanselButtonClick(Sender: TObject);
 begin
+     //for easy keyboard using
+      ButtonEq.SetFocus;
+
       Label4.Caption:='0';
       OverflowError:=false;
       BorderText;
@@ -211,11 +210,58 @@ begin
 end;
 
 
+
+//memorise
+procedure TForm1.ButtonMClick(Sender: TObject);
+begin
+   //for easy keyboard using
+   ButtonEq.SetFocus;
+   if OverflowError then exit;
+
+   FinalCalculationButtonClick(Sender);
+   MemoryString:= ConvertFrom(Label4.Caption);
+end;
+
+//read from memory
+procedure TForm1.ButtonMrClick(Sender: TObject);
+var t:string;
+begin
+   //for easy keyboard using
+    ButtonEq.SetFocus;
+    if OverflowError then exit;
+
+    try
+       t:=ConvertTo(MemoryString);   //it can raise overflow exception
+
+       if Label4.Caption = '0' then Label4.Caption:=t
+         else if not Checker(t) then Label4.Caption:= Label4.Caption + t;
+       BorderText;
+    except
+        on E: EOverflow  do begin
+                  Label4.Caption:='OVERFLOW ERROR! ';
+                  OverflowError:=True;
+        end;
+    end;
+end;
+
+//clean memory
+procedure TForm1.ButttonMcClick(Sender: TObject);
+begin
+   //for easy keyboard using
+   ButtonEq.SetFocus;
+
+   MemoryString:=0;
+end;
+
+
 //switch number system ti radiobuttons pressed
 procedure TForm1.ConverterSwitch(Sender: TObject);
 var ic: byte;
 
 begin
+    //for easy keyboard using
+    ButtonEq.SetFocus;
+
     //find what was pressed
     PrevNumberSystem:=NumberSystem;
     for ic:=1 to Length(RadioButtons) do if RadioButtons[ic].Checked then NumberSystem:=TNumberSystem(ic);
@@ -243,6 +289,19 @@ begin
     end;
 
 
+//menu
+procedure TForm1.About1Click(Sender: TObject);
+begin
+  MessageDlg('Polina'+Char(39)+'s Homework. Liceum KPNL 145. Kiev. 2018. All rights reserved. Read more on GitHub', mtInformation, [mbOK], 0);
+end;
+
+
+procedure TForm1.Exit1Click(Sender: TObject);
+begin
+   Application.Terminate;
+end;
+
+
 
 //Calculate expressin
 procedure TForm1.FinalCalculationButtonClick(Sender: TObject);
@@ -252,28 +311,39 @@ begin
     t:=Label4.Caption;
 
     //sort out stupidities
-    t:=TrimRight(t, 'v');
-    t:=TrimRight(t, '/');
-    t:=TrimRight(t, '*');
+    t:=ReplaceRegExpr('(.)[v+-/*]+$', t, '$1', True);  //remove last actions without number
+    if (t='v') or (t='-') then t:='0';                 //if we started but not finished expression
 
     //prepare complex operations
     t:=PrepareUnaryOperations(t);
 
     //main function call
     Label4.Caption:=DoCalculate(t);
+    PrevNumberSystem:=NumberSystem;   //now we are in a new system
     BorderText;
 end;
 
 
 
 //cope with unari operations such as v,^ and -
+//as only binary operations can be passed to TOperation
+//we have to emulate/simulate them
 function TForm1.PrepareUnaryOperations(s: String): string;
 begin
-    s:=StringReplace(s, '-v','-1*v', [rfReplaceAll]);
-    s:=StringReplace(s, 'v','*1v', [rfReplaceAll]);
-    s:=StringReplace(s, '^','^0', [rfReplaceAll]);
+    //replace ^ with ^2 to symulate binary operation (e.g. 25^ -> 25^2)
+    s:=StringReplace(s, '^','^2', [rfReplaceAll]);
+
+    //if root follows a number insert * between (e.g. 5v9--> '5*v9')
+    s:=ReplaceRegExpr('([0-9A-F])v', s, '$1*v', True);
+
+    //replace v with 1v to symulate binary operation (e.g. v9 -> 1v9)
+    s:=StringReplace(s, 'v','1v', [rfReplaceAll]);
+
+    //symplify +- --> -
     s:=StringReplace(s, '+-','-', [rfReplaceAll]);
+    //binary minus replace with ~ (e.g. 5-4 --> 5~4)
     s:=ReplaceRegExpr('([\d'+DotSymbol+'A-F])-', s, '$1~', True);
+
     PrepareUnaryOperations:=s;
 end;
 
@@ -281,8 +351,11 @@ end;
 
 
 //!!!!!!!!!!!!!!
-//MAIN PROCEDURE
+//MAIN FUNCTION
 //!!!!!!!!!!!!!!
+//get string with expression
+//return string with number
+//uses linked list of TOperation to symplify expression
 function TForm1.DoCalculate(s: String): String;
 var
       Act, Number: String;
@@ -290,7 +363,7 @@ var
       Regex1, Regex2 : TRegExpr;
       Pieces1, Pieces2 : TStringList;//list of strings with flexible length (rubber)
       CurOper : TOperation;
-      ic : Word;
+      i : Word;
 
 begin
     try
@@ -300,11 +373,13 @@ begin
         Pieces2 := TStringList.Create;
 
         //splite with REGEX!
-        Expression1 := '[v^/*+~]+';
-        Expression2 := '[-'+DotSymbol+'0-9A-F]+';
+        Expression1 := '[v^/*+~]+';                  //actions
+        Expression2 := '[-'+DotSymbol+'0-9A-F]+';    //numbers
         Regex1:=TRegExpr.Create(Expression1);
         Regex2:=TRegExpr.Create(Expression2);
+        //break to string into pieces betwin numbers - get actions
         Regex1.Split(s, Pieces1);
+        //break to string into pieces betwin actions - get numbers
         Regex2.Split(s, Pieces2);
 
         //drop 1-st and last '' (broken by numbers)
@@ -314,9 +389,9 @@ begin
         //prepare chain of operations
         Operation:=TOperation.Create;
         CurOper:=Operation;
-        for ic:=1 to Pieces2.Count do
+        for i:=1 to Pieces2.Count do
         begin
-            Act:=Pieces2.Strings[ic-1];
+            Act:=Pieces2.Strings[i-1];
             CurOper.oper:=Act[1];
             CurOper.next:=TOperation.Create;
             CurOper:=CurOper.next;
@@ -324,38 +399,32 @@ begin
 
 
         CurOper:=Operation;
-        for ic:=1 to Pieces1.Count do
+        for i:=1 to Pieces1.Count do
         begin
-            Number:=Pieces1.Strings[ic-1];
+            Number:=Pieces1.Strings[i-1];
             CurOper.v:=ConvertFrom(Number);
             CurOper:=CurOper.next;
         end;
 
        //calculate chain
        SymplifyOperations(Operation);
-       PrevNumberSystem:=NumberSystem;
        DoCalculate:= ConvertTo(Operation.v);
 
 
     //show message if error (all errors happened during development)
     except
-        on E: TMyErrorOverflow do begin
-              DoCalculate:='ERROR, OVERFLOW! ';
+        on E: EOverflow  do begin               //when dec number too big or devision by 0
+              DoCalculate:='OVERFLOW ERROR! ';
               OverflowError:=True;
         end;
-        on E: EOverflow  do begin
-              DoCalculate:='ERROR, OVERFLOW! ';
+        on E: EConvertError do begin            //when hex number too big
+              DoCalculate:='OVERFLOW ERROR! ';
               OverflowError:=True;
         end;
-        on E: EInvalidOp  do begin
-              DoCalculate:='ERROR, OVERFLOW! ';
-              OverflowError:=True;
-        end;
-        on E: EConvertError do begin
-              DoCalculate:='CONVERSION ERROR! ';
-              OverflowError:=True;
-        end;
-        on E: Exception  do ShowMessage('O-o-o-o-p-s! Terrible error has happend: '+E.Message+' !');
+        on E: Exception  do begin               //unknown case
+              ShowMessage('O-o-o-p-s! The terrible error'+Char(39)+'s happend: '+E.Message+' !');
+              Application.Terminate;
+              end;
     end;
 
     //for sure - free memory for all created objects
@@ -378,7 +447,7 @@ end;
 //input converter
 //s is a string, containing a number in PrevNumberSystem (e.g., in Hex '5A')
 //result is Extended type (e.g., 90.0)
-//!!!raises exeptions EConvertError and TMyErrorOverflow
+//!!!raises exeptions EConvertError and EOverflow
 function TForm1.ConvertFrom(s: String): Extended;
 var  v : Extended;
      i, l : Integer;
@@ -394,11 +463,13 @@ begin
      Hex : begin
                  hex_minus:=s[1]='-';            //to enable hex minus
                  s:=TrimLeft(s, '-');
-                 v:=StrToInt64('$'+s);            //convert Hex string to integer
-                 //check, check and again check...
-                 if  Format('%x', [Round(v)]) <> s then raise EConvertError.Create('');
-                 if (v<0) or (v > MAXInt2Hex) then raise TMyErrorOverflow.Create('');
-                 if hex_minus then v:=-1*v;
+
+                 //convert Hex string to integer
+                 if hex_minus then v:=StrToInt64('-$'+s)
+                      else v:=StrToInt64('$'+s);
+
+                 //check if we exceeded max limit or turned to negative
+                 if (not hex_minus and (v<0)) or (v > MAXInt2Hex) then raise EOverflow.Create('Hex Overflow');
            end;
   end;
 ConvertFrom:=v;
@@ -406,7 +477,7 @@ end;
 
 
 //confert from  digital to any output  based of  NumberSystem
-//!!!raises exeptions TMyErrorOverflow
+//!!!raises exeptions EOverflow
 function TForm1.ConvertTo(d: Extended): String;
 var  t,f : String;
      absD : Extended;
@@ -423,7 +494,7 @@ begin
                  if t='' then t:='0';
            end;
      Bin : begin
-                 if absD>MAXInt2Binary then raise TMyErrorOverflow.Create('');
+                 if absD>MAXInt2Binary then raise EOverflow.Create('Bin Overflow');
                  roundD:=Round(absD);
                  while (roundD > 0) do
                        begin
@@ -433,7 +504,7 @@ begin
                  if t='' then t:='0';
            end;
      Hex : begin
-                 if absD>MAXInt2Hex then raise TMyErrorOverflow.Create('');
+                 if absD>MAXInt2Hex then raise EOverflow.Create('Hex Overflow');
                  roundD:=Round(absD);
                  t:=Format('%x', [roundD]);
                  if d<0 then t:='-'+t;       //hex minus
@@ -466,22 +537,42 @@ end;
 
 
 //check if input has mistakes
-//s is a string which we try to add to Label4
-function TForm1.Checker(s: String): Boolean;
-var c : Char;
+//c is a char which we try to add to Label4
+function TForm1.Checker(pressed: Char): Boolean;
+var
+      s : String;
+      last : Char;
+
 begin
+      //last symbol
+      s:=Label4.Caption;
+      last:=s[Length(Label4.Caption)];
+
+      Checker:=false;
+
       //check for dot pressed twice
-      if CheckDot(s)  and (s=DotSymbol) then Checker:=true else Checker:=false;
-      //not to put dot without a number
-      c:=Label4.Caption[Length(Label4.Caption)];
-      if (not(c in ['0'..'9','A'..'F'])) and (s=DotSymbol) then Checker:=true;
-      //checks if Label4+s doesn't exeeds max length
-      if (Length(Label4.Caption))>maxNumberWidth then Checker:=true;
+      if CheckDot  and (pressed=DotSymbol) then Checker:=true;
+
+      //not to let dot without previous number
+      if (not(last in All_Dec+All_Hex)) and (pressed=DotSymbol) then Checker:=true;
+
+      //checks if Label4+s exeeds max length
+      if (Length(Label4.Caption))>=maxNumberWidth then Checker:=true;
+
+      //check if too many operation pressed
+      if (last in (All_Actions-['^'])) and (pressed in (All_Actions-['-','v'])) then Checker:=true;
+      if (last = '-') and (pressed = '-') then Checker:=true;
+      if (last = 'v') and (pressed = '-') then Checker:=true;
+      if (last = '^') and (pressed = '^') then Checker:=true;
+      if (last = 'v') and (pressed = 'v') then Checker:=true;
+
+      //no minus for binary
+      if (pressed='-') and (NumberSystem=Bin) and (s='0') then Checker:=True;
 end;
 
 
 //helper - to check with regex
-function TForm1.CheckDot(s: String): Boolean;
+function TForm1.CheckDot: Boolean;
 var Regex : TRegExpr;
     Expr : String;
 begin
@@ -489,6 +580,45 @@ begin
     Regex:=TRegExpr.Create(Expr);
     if Regex.Exec(Label4.Caption) then CheckDot:=True else CheckDot:=False;
     Regex.Free;
+end;
+
+
+
+//special check for memory function
+//s is a string which we try to add to Label4
+function TForm1.Checker(s: String): Boolean;
+var q : Char;
+begin
+      //last symbol
+      q:=Label4.Caption[Length(Label4.Caption)];
+      //checks if Label4+s exeeds max length
+      if (Length(Label4.Caption+s))>maxNumberWidth then Checker:=true else Checker:=false;
+      //if we put number after number of power 2
+      if q in All_Dec+All_Hex+['^',DotSymbol] then Checker:=True;
+end;
+
+
+
+//key pressed
+procedure TForm1.KeyOnFormPressed(Sender: TObject; var Key: Char) ;
+var b_temp: TButton;
+begin
+    if Key in [',', '.'] then Key:=DotSymbol;
+    if (not ButtonDot.Enabled) and (Key=DotSymbol) then exit;  //no more dots
+    if not (Ord(Key) in [42..49, 8, 27]) and (NumberSystem=Bin) then exit;     //no other then 0,1
+
+    b_temp:=TButton.Create(Self);   //temporary virtual button
+    b_temp.Caption:=Key;
+    ButtonEq.SetFocus;   //for easy pressing Enter = Calculate
+    case Ord(Key) of
+        42..57:   //these are oll symbols 0..9  +-/*,.
+        begin
+                AllButtonsClick(b_temp);
+        end;
+        27:     CanselButtonClick(b_temp);
+        8:      BackSpaceClick(b_temp);
+    end;
+    b_temp.Free;
 end;
 
 
@@ -534,68 +664,11 @@ end;
 
 
 
-//memorise
-procedure TForm1.ButtonMClick(Sender: TObject);
-begin
-   FinalCalculationButtonClick(Sender);
-   MemoryString:= ConvertFrom(Label4.Caption);
-end;
-
-//read from memory
-procedure TForm1.ButtonMrClick(Sender: TObject);
-var t:string;
-begin
-   t:=ConvertTo(MemoryString);
-   if Checker(t) then Exit;
-   if Label4.Caption = '0' then Label4.Caption:=t
-     else Label4.Caption:= Label4.Caption + t;
-   BorderText;
-end;
-
-//clean memory
-procedure TForm1.ButttonMcClick(Sender: TObject);
-begin
-  MemoryString:=0;
-end;
-
-//test feature - key pressed enter
-procedure TForm1.Test(Sender: TObject; var Key: Char) ;
-var b_temp: TButton;
-begin
-    if Key in [',', '.'] then Key:=DotSymbol;
-    if (not ButtonDot.Enabled) and (Key=DotSymbol) then exit;  //no more dots
-
-    b_temp:=TButton.Create(Self);   //temporary virtual button
-    b_temp.Caption:=Key;
-    ButtonEq.SetFocus;   //for easy pressing Enter = Calculate
-    case Ord(Key) of
-        42..57:   //these are oll symbols 0..9  +-/*,.
-        begin
-                AllButtonsClick(b_temp);
-        end;
-        27:     CanselButtonClick(b_temp);
-        8:      BackSpaceClick(b_temp);
-    end;
-    b_temp.Free;
-end;
-
-
-
-procedure TForm1.About1Click(Sender: TObject);
-begin
-  MessageDlg('Polina'+Char(39)+'s Homework. Liceum KPNL 145. Kiev. 2018. All rights reserved. Read more on GitHub', mtInformation, [mbOK], 0);
-end;
-
-
-procedure TForm1.Exit1Click(Sender: TObject);
-begin
-   Application.Terminate;
-end;
 
 
 //this is a cratch (KOSTYL)
-//images position was unstable :(
-//papa helped! for me is a magic
+//images position jumped on the screen without it :(
+//daddy helped! for me it's magic
 procedure TForm1.Paint;
 var i : Byte;
 begin
@@ -612,8 +685,8 @@ end;
 
 
 
-{ TOperation }
  //any operation knows how to simplify itself
+ //!!!!raises EOverflow
  function TOperation.Action : Extended;
     var res : Extended;
     begin
@@ -622,9 +695,9 @@ end;
       '+': res:=v+next.v;
       '~': res:=v-next.v;
       '*': res:=v*next.v;
-      '^': res:=power(v,2);
-      '/': if next.v=0 then raise TMyErrorOverflow.Create('') else res:=v/next.v;
-      'v': if next.v<0 then raise TMyErrorOverflow.Create('') else res:=sqrt(next.v);
+      '^': res:=power(v,next.v);    //next.v=2
+      '/': if next.v=0 then raise EOverflow.Create('') else res:=v/next.v;
+      'v': if next.v<0 then raise EOverflow.Create('') else res:=v*sqrt(next.v);   //v=1 or -1
       end;
         v:=res;
         oper:=next.oper;
@@ -636,19 +709,23 @@ end;
 //Test. Show message if test failed
 //To disable - comment out a string in AfterCreated
 procedure TForm1.TestMe;
-var test_str : array [1..2] of string;
-    test_result : array [1..2] of string;
+var test_str : array [1..3] of string;
+    test_result : array [1..3] of string;
     d1, d2 : Extended;
     actual_result: string;
     i,l : Integer;
 begin
        //test1
-       test_str[1]:='-0/4v6';
-       test_result[1]:='0';
+       test_str[1]:='-0+-v256+4-0.8';
+       test_result[1]:='-12.8';
 
        //test2
-       test_str[2]:='0/4+41.5*106.1+-45.2v9/31.2^*21-3.12/44.5+25^v6.3+1414.45*32.5v32*32/3';
-       test_result[2]:='2779765.8897822932';
+       test_str[2]:='-0/4v6';
+       test_result[2]:='0';
+
+       //test3
+       test_str[3]:='0/4+41.5*106.1+-45.2v9/31.2^*21-3.12/44.5+25^v6.3+1414.45*32.5v32*32/3';
+       test_result[3]:='2779765.8897822932';
 
 
        for i:=1 to Length( test_str) do begin
